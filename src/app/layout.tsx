@@ -24,42 +24,51 @@ const beVietnamUi = Be_Vietnam_Pro({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#142C2A",
+  themeColor: "#193D34",
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
 };
 
+const SITE_TITLE = "TRẢI ĐỜI — Về Xóm Chơi! | Game Đời Sống & Khám Phá Việt Nam";
+const SITE_DESCRIPTION =
+  "Trở về Xóm Bến Dừa yên bình miền Tây sông nước. Trải nghiệm đời sống nông thôn bình dị, chăm sóc mảnh vườn rau củ, quay lộc đầu mùa, chuyện trò cùng Bà Ngoại & Ông Thổ Địa, và tự do khám phá 5 vùng đất kỳ thú của Việt Nam.";
+const SITE_URL = "https://nolyminhdz-dev.github.io";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://nolyminhdz-dev.github.io"),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "TRẢI ĐỜI — Một Thế Giới Việt Nam Để Sống, Khám Phá Và Kết Nối",
+    default: SITE_TITLE,
     template: "%s | TRẢI ĐỜI",
   },
-  description:
-    "Bắt đầu từ Xóm Bến Dừa miền Tây. Trải nghiệm đời sống, trồng rau, trò chuyện cùng Bà Ngoại & Ông Thổ Địa, khám phá 5 vùng đất Việt Nam. Bản thử nghiệm Pixel Build #658 hướng tới Unity 6 Stylized 3D Anime.",
+  description: SITE_DESCRIPTION,
   keywords: [
     "Trải Đời",
     "Game Trải Đời",
+    "Về Xóm Chơi",
     "Xóm Bến Dừa",
     "Game Việt Nam",
-    "Cozy Life Simulation",
-    "Unity 6 Stylized 3D Anime",
+    "Game Nông Trại Việt Nam",
+    "Cozy Life Sim",
+    "Khám Phá Việt Nam",
+    "Bà Ngoại",
+    "Ông Thổ Địa",
+    "Trò Chơi Dân Gian",
   ],
   authors: [{ name: "TRẢI ĐỜI Team" }],
   creator: "TRẢI ĐỜI Team",
+  publisher: "TRẢI ĐỜI Studio",
   alternates: {
     canonical: "/",
   },
   openGraph: {
     type: "website",
     locale: "vi_VN",
-    url: "https://nolyminhdz-dev.github.io/",
+    url: SITE_URL,
     siteName: "TRẢI ĐỜI",
-    title: "TRẢI ĐỜI — Một Thế Giới Việt Nam Để Sống, Khám Phá Và Kết Nối",
-    description:
-      "Bắt đầu từ Xóm Bến Dừa miền Tây. Gặp gỡ những con người thân thuộc, chăm sóc mảnh vườn quê và khám phá 5 vùng đất Việt Nam.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [
       {
         url: "/game-assets/screenshots/world-thodia.png",
@@ -71,9 +80,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "TRẢI ĐỜI — Một Thế Giới Việt Nam Để Sống, Khám Phá Và Kết Nối",
-    description:
-      "Khám phá thế giới đời sống và văn hóa Việt Nam từ Xóm Bến Dừa miền Tây.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: ["/game-assets/screenshots/world-thodia.png"],
   },
   robots: {
@@ -92,7 +100,7 @@ export default function RootLayout({
       lang="vi"
       className={`${oswaldTrailer.variable} ${chakraHero.variable} ${beVietnamUi.variable}`}
     >
-      <body className="antialiased selection:bg-[#F2D39B] selection:text-[#142C2A]">
+      <body className="antialiased selection:bg-[#F5CC72] selection:text-[#193D34]">
         {children}
       </body>
     </html>

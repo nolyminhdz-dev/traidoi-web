@@ -5,18 +5,19 @@ import BambooHudNav from "@/components/BambooHudNav";
 import WeatherEngineCanvas, { WeatherMode } from "@/components/WeatherEngineCanvas";
 import Tropical3DFoliageFrame from "@/components/Tropical3DFoliageFrame";
 import HeroDiorama from "@/components/HeroDiorama";
-import GameplayPillarsSection from "@/components/GameplayPillarsSection";
-import WorldAtlasSection from "@/components/WorldAtlasSection";
 import GardenAndMemoriesSection from "@/components/GardenAndMemoriesSection";
 import KarmaWheelSection from "@/components/KarmaWheelSection";
+import WorldAtlasSection from "@/components/WorldAtlasSection";
+import GameplayPillarsSection from "@/components/GameplayPillarsSection";
 import Gliding3DGameScreens from "@/components/Gliding3DGameScreens";
 import CraftAndFooterSection from "@/components/CraftAndFooterSection";
 
+// Vibrant Vietnamese Fantasy Palette (#193D34, #2B806A, #1E4A3E) - Không đen đặc
 const WEATHER_BG_THEMES: Record<WeatherMode, string> = {
-  sun: "bg-gradient-to-b from-[#0E1F1D] via-[#142C2A] to-[#0B1816]",
-  rain: "bg-gradient-to-b from-[#09131C] via-[#0F1E2B] to-[#070E14]",
-  sunset: "bg-gradient-to-b from-[#231215] via-[#1C141A] to-[#0E1517]",
-  night: "bg-gradient-to-b from-[#050B0B] via-[#091314] to-[#040808]",
+  sun: "bg-gradient-to-b from-[#193D34] via-[#24584C] to-[#1E4A3E]",
+  rain: "bg-gradient-to-b from-[#163B34] via-[#1E4941] to-[#183932]",
+  sunset: "bg-gradient-to-b from-[#2E2822] via-[#244A40] to-[#193D34]",
+  night: "bg-gradient-to-b from-[#122A24] via-[#1A3D34] to-[#15312A]",
 };
 
 const STORAGE_KEY = "traidoi_web_state_v2";
@@ -24,31 +25,39 @@ const STORAGE_KEY = "traidoi_web_state_v2";
 export default function HomePage() {
   const [wallet, setWallet] = useState<number>(10000); // 10.000 Xu Làng khởi đầu
   const [spinsLeft, setSpinsLeft] = useState<number>(3); // 3 lượt quay khởi đầu
-  const [hunger, setHunger] = useState<number>(89);
-  const [thirst, setThirst] = useState<number>(85);
+  const [hunger, setHunger] = useState<number>(89); // Chỉ số no 0-100
+  const [thirst, setThirst] = useState<number>(85); // Chỉ số nước 0-100
   const [weather, setWeather] = useState<WeatherMode>("sun");
   const [hydrated, setHydrated] = useState<boolean>(false);
 
-  // Safe Versioned State Hydration from localStorage (Section XV.41)
+  // Safe Versioned State Hydration from localStorage (Bảo toàn wallet, spinsLeft, hunger, thirst, weather)
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (typeof parsed.wallet === "number" && parsed.wallet >= 0) {
-          setWallet(parsed.wallet);
-        }
-        if (typeof parsed.spinsLeft === "number" && parsed.spinsLeft >= 0) {
-          setSpinsLeft(parsed.spinsLeft);
-        }
-        if (
-          parsed.weather === "sun" ||
-          parsed.weather === "rain" ||
-          parsed.weather === "sunset" ||
-          parsed.weather === "night"
-        ) {
-          setWeather(parsed.weather);
-        }
+        React.startTransition(() => {
+          if (typeof parsed.wallet === "number" && !Number.isNaN(parsed.wallet) && parsed.wallet >= 0) {
+            setWallet(parsed.wallet);
+          }
+          if (typeof parsed.spinsLeft === "number" && !Number.isNaN(parsed.spinsLeft) && parsed.spinsLeft >= 0) {
+            setSpinsLeft(parsed.spinsLeft);
+          }
+          if (typeof parsed.hunger === "number" && !Number.isNaN(parsed.hunger) && parsed.hunger >= 0 && parsed.hunger <= 100) {
+            setHunger(parsed.hunger);
+          }
+          if (typeof parsed.thirst === "number" && !Number.isNaN(parsed.thirst) && parsed.thirst >= 0 && parsed.thirst <= 100) {
+            setThirst(parsed.thirst);
+          }
+          if (
+            parsed.weather === "sun" ||
+            parsed.weather === "rain" ||
+            parsed.weather === "sunset" ||
+            parsed.weather === "night"
+          ) {
+            setWeather(parsed.weather);
+          }
+        });
       }
     } catch {
       // Fallback to default state safely
@@ -57,17 +66,25 @@ export default function HomePage() {
     }
   }, []);
 
+  // Persist updated player state to localStorage
   useEffect(() => {
     if (!hydrated) return;
     try {
       window.localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ wallet, spinsLeft, weather, version: 2 })
+        JSON.stringify({
+          wallet,
+          spinsLeft,
+          hunger,
+          thirst,
+          weather,
+          version: 2,
+        })
       );
     } catch {
       // Ignore storage quota errors
     }
-  }, [wallet, spinsLeft, weather, hydrated]);
+  }, [wallet, spinsLeft, hunger, thirst, weather, hydrated]);
 
   return (
     <div
@@ -79,7 +96,7 @@ export default function HomePage() {
       {/* 2. SUBTLE DESKTOP FOLIAGE SILHOUETTE FRAME */}
       <Tropical3DFoliageFrame weather={weather} />
 
-      {/* 3. GLOBAL NAVIGATION HEADER & MOBILE DRAWER */}
+      {/* 1. HEADER (BAMBOO HUD NAV) */}
       <BambooHudNav
         wallet={wallet}
         spinsLeft={spinsLeft}
@@ -87,51 +104,61 @@ export default function HomePage() {
         setWeather={setWeather}
       />
 
-      {/* 4. MAIN PAGE ARCHITECTURE (SECTION XVI.45) */}
+      {/* MAIN HOMEPAGE SECTIONS - THỨ TỰ BẮT BUỘC (MỤC VII: ĐƯA GAMEPLAY LÊN ĐẦU) */}
       <main className="relative z-10">
-        {/* Section 10: Cinematic Hero + Section 11: The Living World */}
-        <HeroDiorama
-          weather={weather}
-          setWeather={setWeather}
-          onSelectOriginBonus={() => {
-            setSpinsLeft((prev) => prev + 1);
-          }}
-          onBonusWallet={(amt) => {
-            setWallet((prev) => prev + amt);
-          }}
-        />
+        {/* 2. HERO: Cinematic Hero & Khởi đầu tại Xóm Bến Dừa */}
+        <div id="trang-chu">
+          <HeroDiorama
+            weather={weather}
+            setWeather={setWeather}
+            onSelectOriginBonus={() => {
+              setSpinsLeft((prev) => prev + 1);
+            }}
+            onBonusWallet={(amt) => {
+              setWallet((prev) => prev + amt);
+            }}
+          />
+        </div>
 
-        {/* Section 12: 4 Gameplay Pillars + Section 14: Characters & Stories */}
+        {/* 3. TRỒNG RAU: Vườn Nhà Ngoại, Chăm Sóc Cây Trồng, Nấu Ăn & Kỷ Vật */}
+        <div id="trong-rau">
+          <GardenAndMemoriesSection
+            wallet={wallet}
+            setWallet={setWallet}
+            setSpinsLeft={setSpinsLeft}
+            hunger={hunger}
+            setHunger={setHunger}
+            thirst={thirst}
+            setThirst={setThirst}
+            weather={weather}
+          />
+        </div>
+
+        {/* 4. QUAY LỘC: Đại Luân Quay Lộc, Nhận Thưởng May Mắn & Túi Lộc */}
+        <div id="quay-loc">
+          <KarmaWheelSection
+            spinsLeft={spinsLeft}
+            setSpinsLeft={setSpinsLeft}
+            wallet={wallet}
+            setWallet={setWallet}
+            weather={weather}
+          />
+        </div>
+
+        {/* 5. KHÁM PHÁ THẾ GIỚI: Bản Đồ Tương Tác 5 Vùng Đất Kỳ Thú Việt Nam */}
+        <div id="kham-pha">
+          <WorldAtlasSection weather={weather} />
+        </div>
+
+        {/* 6. NHÂN VẬT & LỐI CHƠI: 4 Trụ Cột Gameplay & Những Con Người Nơi Xóm Nhỏ */}
         <GameplayPillarsSection />
 
-        {/* Section 13: Explore Vietnam — Interactive 5-Region World Map */}
-        <WorldAtlasSection weather={weather} />
+        {/* 7. BỘ SƯU TẬP / THƯ VIỆN: Trình Chiếu Ảnh & Video Khoảnh Khắc Làng Quê */}
+        <div id="thu-vien">
+          <Gliding3DGameScreens weather={weather} />
+        </div>
 
-        {/* Section 19 & 20: Interactive Village Experience (Farming, Shop & Keepsakes) */}
-        <GardenAndMemoriesSection
-          wallet={wallet}
-          setWallet={setWallet}
-          setSpinsLeft={setSpinsLeft}
-          hunger={hunger}
-          setHunger={setHunger}
-          thirst={thirst}
-          setThirst={setThirst}
-          weather={weather}
-        />
-
-        {/* Section 20: Đại Luân Quay Lộc & Túi Lộc */}
-        <KarmaWheelSection
-          spinsLeft={spinsLeft}
-          setSpinsLeft={setSpinsLeft}
-          wallet={wallet}
-          setWallet={setWallet}
-          weather={weather}
-        />
-
-        {/* Section 15: Filterable Game Preview & Media Gallery + Lightbox */}
-        <Gliding3DGameScreens weather={weather} />
-
-        {/* Section 16: Development Journey + Section 17: Community + Section 18: Footer */}
+        {/* 8. FOOTER: Lộ Trình Phát Triển, Kết Nối Cộng Đồng & Thông Tin Game */}
         <CraftAndFooterSection weather={weather} />
       </main>
     </div>

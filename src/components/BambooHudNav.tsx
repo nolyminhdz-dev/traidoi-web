@@ -5,7 +5,6 @@ import {
   Volume2,
   VolumeX,
   Radio,
-  Sparkles,
   Sun,
   CloudRain,
   Sunset,
@@ -13,7 +12,11 @@ import {
   Coins,
   Menu,
   X,
+  Sprout,
   Compass,
+  Sparkles,
+  Users,
+  Play,
 } from "lucide-react";
 import { soundEngine } from "@/lib/sound-engine";
 import { WeatherMode } from "./WeatherEngineCanvas";
@@ -22,47 +25,45 @@ interface BambooHudNavProps {
   wallet: number;
   spinsLeft: number;
   weather: WeatherMode;
-  setWeather: (w: WeatherMode) => void;
+  setWeather: React.Dispatch<React.SetStateAction<WeatherMode>>;
 }
 
-const WEATHER_BUTTONS: {
+const WEATHER_OPTIONS: {
   id: WeatherMode;
   label: string;
-  icon: React.ReactNode;
+  icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { id: "sun", label: "Nắng Sớm", icon: <Sun className="w-3.5 h-3.5" /> },
-  { id: "rain", label: "Mưa Rào", icon: <CloudRain className="w-3.5 h-3.5" /> },
-  { id: "sunset", label: "Hoàng Hôn", icon: <Sunset className="w-3.5 h-3.5" /> },
-  { id: "night", label: "Đêm Đèn", icon: <Moon className="w-3.5 h-3.5" /> },
+  { id: "sun", label: "Ban ngày", icon: Sun },
+  { id: "rain", label: "Mưa rào", icon: CloudRain },
+  { id: "sunset", label: "Hoàng hôn", icon: Sunset },
+  { id: "night", label: "Đêm trăng", icon: Moon },
 ];
 
 const NAV_LINKS = [
-  { label: "Thế Giới", href: "#the-living-world" },
-  { label: "Lối Chơi", href: "#loi-choi" },
-  { label: "Bản Đồ", href: "#ban-do-viet-nam" },
-  { label: "Nhân Vật", href: "#nhan-vat" },
-  { label: "Trải Nghiệm", href: "#vuon-nha-ngoai" },
-  { label: "Thư Viện", href: "#thu-vien-hinh-anh" },
-  { label: "Lộ Trình", href: "#lo-trinh-phat-trien" },
+  { href: "#trang-chu", label: "Trang chủ", icon: Sparkles },
+  { href: "#trong-rau", label: "Trồng rau", icon: Sprout },
+  { href: "#quay-loc", label: "Quay lộc", icon: Sparkles },
+  { href: "#kham-pha", label: "Khám phá", icon: Compass },
+  { href: "#nhan-vat", label: "Nhân vật", icon: Users },
 ];
 
 export default function BambooHudNav({
   wallet,
-  spinsLeft,
   weather,
   setWeather,
 }: BambooHudNavProps) {
-  const [muted, setMuted] = useState(true);
-  const [radioActive, setRadioActive] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [muted, setMuted] = useState<boolean>(false);
+  const [radioOn, setRadioOn] = useState<boolean>(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [scrolled, setScrolled] = useState<boolean>(false);
+  const [activeHash, setActiveHash] = useState<string>("#trang-chu");
 
   useEffect(() => {
-    const onScroll = () => {
+    const handleScroll = () => {
       setScrolled(window.scrollY > 24);
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
@@ -76,242 +77,259 @@ export default function BambooHudNav({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mobileMenuOpen]);
 
-  const handleToggleAudio = () => {
+  const handleToggleSound = () => {
     const isNowMuted = soundEngine.toggleMute();
     setMuted(isNowMuted);
   };
 
   const handleToggleRadio = () => {
-    if (muted) {
+    const nextState = !radioOn;
+    setRadioOn(nextState);
+    if (muted && nextState) {
       soundEngine.toggleMute();
       setMuted(false);
     }
-    const nextState = !radioActive;
-    setRadioActive(nextState);
     soundEngine.switchTrack(nextState ? "radio" : "village");
-    soundEngine.playSfx("interact", 0.5);
   };
 
-  const handleSelectWeather = (mode: WeatherMode) => {
+  const handleChangeWeather = (mode: WeatherMode) => {
     setWeather(mode);
-    soundEngine.playSfx(mode === "rain" ? "water" : "interact", 0.4);
+    soundEngine.setWeatherAudio(mode);
+    soundEngine.playSfx("interact", 0.35);
   };
 
   return (
     <header
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 select-none ${
+      className={`sticky top-0 z-50 w-full transition-all duration-300 select-none ${
         scrolled
-          ? "bg-[#0E1F1D]/92 backdrop-blur-md border-b border-[#F2D39B]/25 py-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.65)]"
-          : "bg-gradient-to-b from-[#0E1F1D]/90 via-[#0E1F1D]/60 to-transparent py-3.5"
+          ? "bg-[#193D34]/95 backdrop-blur-md border-b border-[#F5CC72]/35 shadow-[0_10px_28px_rgba(0,0,0,0.35)]"
+          : "bg-[#193D34]/82 backdrop-blur-sm border-b border-[#F5CC72]/20"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center justify-between gap-2">
-        {/* LEFT: Brand Identity */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between gap-3">
+        {/* LEFT: BRAND LOGO */}
         <a
-          href="#cong-lang"
-          aria-label="TRẢI ĐỜI — Trang chủ"
-          onClick={() => soundEngine.playSfx("interact", 0.35)}
+          href="#trang-chu"
+          onClick={() => setActiveHash("#trang-chu")}
           className="flex items-center gap-2.5 group shrink-0"
+          aria-label="TRẢI ĐỜI — Về trang chủ"
         >
-          <div className="w-9 h-9 rounded-xl bg-[#142C2A] border border-[#F2D39B]/60 flex items-center justify-center p-1 shadow-inner group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-[#3A2316] to-[#24160E] border-2 border-[#F5CC72] flex items-center justify-center shadow-[0_3px_0_#140B06] group-hover:scale-105 transition-transform">
             <img
-              src="/game-assets/pixel/portrait-tho-dia.png"
-              alt="Biểu tượng Trải Đời"
-              className="w-full h-full object-contain pixelated"
+              src="/game-assets/pixel/mieu.png"
+              alt=""
+              className="w-7 h-7 object-contain pixelated"
             />
           </div>
           <div className="flex flex-col">
-            <span className="font-wood text-base sm:text-lg tracking-wider text-wood-gold leading-none">
+            <span className="font-wood text-xl sm:text-2xl tracking-wider text-wood-gold leading-none">
               TRẢI ĐỜI
             </span>
-            <span className="text-[10px] font-medium text-[#D9D2C5] tracking-wider hidden sm:inline">
-              Xóm Bến Dừa • Build #658
+            <span className="text-[10px] font-bold tracking-wider uppercase text-[#8BD3F4] mt-0.5">
+              Xóm Bến Dừa
             </span>
           </div>
         </a>
 
-        {/* CENTER: Desktop Navigation Links */}
+        {/* CENTER: DESKTOP NAVIGATION */}
         <nav
           aria-label="Điều hướng chính"
-          className="hidden xl:flex items-center gap-1 bg-[#142C2A]/75 border border-[#F2D39B]/20 rounded-full px-3 py-1"
+          className="hidden md:flex items-center gap-1 lg:gap-1.5 bg-[#122D26]/80 border border-[#F5CC72]/25 rounded-full px-2 py-1"
         >
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              onClick={() => soundEngine.playSfx("interact", 0.25)}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold text-[#F7F3E8]/90 hover:text-[#F2D39B] hover:bg-[#2B6657]/35 transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const isActive = activeHash === link.href;
+            return (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={() => {
+                  setActiveHash(link.href);
+                  soundEngine.playSfx("interact", 0.25);
+                }}
+                className={`px-3.5 py-1.5 rounded-full text-xs lg:text-sm font-bold transition-all ${
+                  isActive
+                    ? "bg-[#F5CC72] text-[#24160E] shadow-sm"
+                    : "text-[#FFF6E5]/90 hover:text-[#F5CC72] hover:bg-white/5"
+                }`}
+              >
+                {link.label}
+              </a>
+            );
+          })}
         </nav>
 
-        {/* RIGHT: Weather Switcher, Currency HUD & Mobile Menu Toggle */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Desktop 4-Mode Weather Switcher */}
+        {/* RIGHT: GAME WALLET HUD + SOUND + PRIMARY CTA */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Weather Quick Switcher (Desktop XL) */}
           <div
             role="group"
-            aria-label="Chế độ thời tiết và thời gian"
-            className="hidden md:flex items-center gap-1 bg-[#142C2A]/90 border border-[#F2D39B]/25 rounded-full p-1"
+            aria-label="Thời gian trong xóm"
+            className="hidden xl:flex items-center bg-[#122D26]/90 border border-[#F5CC72]/25 rounded-full p-1 gap-0.5"
           >
-            {WEATHER_BUTTONS.map((btn) => {
-              const active = weather === btn.id;
+            {WEATHER_OPTIONS.map((opt) => {
+              const Icon = opt.icon;
+              const active = weather === opt.id;
               return (
                 <button
-                  key={btn.id}
+                  key={opt.id}
                   type="button"
-                  onClick={() => handleSelectWeather(btn.id)}
+                  onClick={() => handleChangeWeather(opt.id)}
+                  title={opt.label}
+                  aria-label={opt.label}
                   aria-pressed={active}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                  className={`p-1.5 rounded-full transition-all cursor-pointer ${
                     active
-                      ? "bg-[#F2D39B] text-[#142C2A] shadow-sm"
-                      : "text-[#D9D2C5] hover:text-[#F7F3E8]"
+                      ? "bg-[#F5CC72] text-[#24160E] shadow-sm"
+                      : "text-[#FFF6E5]/75 hover:text-[#FFF6E5]"
                   }`}
                 >
-                  {btn.icon}
-                  <span className="hidden lg:inline">{btn.label}</span>
+                  <Icon className="w-3.5 h-3.5" />
                 </button>
               );
             })}
           </div>
 
-          {/* In-Game Currency Pill: Xu Làng (Separated from real-money VND) */}
-          <div
-            title="Tiền tệ trong game: Xu Làng"
-            className="flex items-center gap-1.5 bg-[#142C2A]/95 border border-[#F2D39B]/40 rounded-full px-2.5 sm:px-3 py-1 text-xs font-bold text-[#F2D39B]"
+          {/* Clean Game Wallet Badge */}
+          <a
+            href="#trong-rau"
+            title="Số dư Xu Làng của bạn"
+            className="flex items-center gap-1.5 bg-[#2A1A11] border-2 border-[#F5CC72]/70 rounded-full px-3 py-1.5 shadow-[0_2px_0_#140B06] hover:border-[#F5CC72] transition-colors"
           >
-            <Coins className="w-3.5 h-3.5 text-[#F2D39B] shrink-0" />
-            <span>{wallet.toLocaleString("vi-VN")}</span>
-            <span className="hidden sm:inline text-[11px] text-[#D9D2C5] font-medium">
+            <Coins className="w-4 h-4 text-[#F5CC72] shrink-0" />
+            <span className="text-xs sm:text-sm font-extrabold text-[#FFF6E5] tabular-nums">
+              {wallet.toLocaleString("vi-VN")}
+            </span>
+            <span className="hidden sm:inline text-[11px] font-bold text-[#F5CC72]">
               Xu Làng
             </span>
-          </div>
-
-          {/* Primary CTA to Interactive Wheel / Sandbox */}
-          <a
-            href="#vong-quay-nhan-qua"
-            onClick={() => soundEngine.playSfx("interact", 0.35)}
-            className="hidden sm:flex items-center gap-1.5 bg-gradient-to-b from-[#F2D39B] to-[#C88412] hover:brightness-105 text-[#142C2A] border border-[#FFF8E6]/60 rounded-full px-3.5 py-1.5 text-xs font-extrabold shadow-sm transition-all"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Quay Lộc ({spinsLeft})</span>
           </a>
 
-          {/* Audio Controls */}
+          {/* Sound Toggle Button */}
           <button
             type="button"
-            onClick={handleToggleRadio}
-            aria-label={radioActive ? "Tắt đài phát thanh làng" : "Bật đài phát thanh làng"}
-            title="Đài Phát Thanh Xóm Bến Dừa"
-            className={`hidden sm:flex items-center justify-center w-8 h-8 rounded-full border transition-all cursor-pointer ${
-              radioActive && !muted
-                ? "bg-[#2B6657] border-[#F2D39B] text-[#F7F3E8]"
-                : "bg-[#142C2A]/90 border-[#F2D39B]/30 text-[#D9D2C5] hover:text-[#F7F3E8]"
+            onClick={handleToggleSound}
+            aria-label={muted ? "Bật âm thanh" : "Tắt âm thanh"}
+            title={muted ? "Bật âm thanh" : "Tắt âm thanh"}
+            className={`p-2 rounded-full border transition-colors cursor-pointer ${
+              muted
+                ? "bg-[#2A1A11]/80 border-[#E98065]/50 text-[#E98065]"
+                : "bg-[#122D26] border-[#F5CC72]/40 text-[#F5CC72] hover:bg-[#1E463B]"
             }`}
           >
-            <Radio className="w-3.5 h-3.5" />
+            {muted ? (
+              <VolumeX className="w-4 h-4" />
+            ) : (
+              <Volume2 className="w-4 h-4" />
+            )}
           </button>
 
-          <button
-            type="button"
-            onClick={handleToggleAudio}
-            aria-label={muted ? "Bật âm thanh môi trường" : "Tắt âm thanh môi trường"}
-            className={`flex items-center justify-center w-9 h-9 sm:w-8 sm:h-8 rounded-full border transition-all cursor-pointer ${
-              !muted
-                ? "bg-[#2B6657] border-[#F2D39B] text-[#F7F3E8]"
-                : "bg-[#142C2A]/90 border-[#F2D39B]/30 text-[#D9D2C5]"
-            }`}
+          {/* Primary CTA: Chơi ngay */}
+          <a
+            href="#trong-rau"
+            onClick={() => {
+              setActiveHash("#trong-rau");
+              soundEngine.playSfx("interact", 0.4);
+            }}
+            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full btn-game-primary font-extrabold text-xs lg:text-sm tracking-wide cursor-pointer"
           >
-            {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          </button>
+            <Play className="w-3.5 h-3.5 fill-current" />
+            <span>Chơi ngay</span>
+          </a>
 
-          {/* Mobile Menu Button (< xl) */}
+          {/* Mobile Hamburger Button */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
             aria-expanded={mobileMenuOpen}
-            aria-controls="mobile-navigation-drawer"
-            aria-label={mobileMenuOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"}
-            className="xl:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-[#142C2A] border border-[#F2D39B]/45 text-[#F7F3E8] cursor-pointer"
+            aria-controls="mobile-game-menu"
+            aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"}
+            className="md:hidden p-2 rounded-xl bg-[#122D26] border border-[#F5CC72]/45 text-[#FFF6E5] hover:border-[#F5CC72] cursor-pointer"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? (
+              <X className="w-5 h-5 text-[#F5CC72]" />
+            ) : (
+              <Menu className="w-5 h-5 text-[#F5CC72]" />
+            )}
           </button>
         </div>
       </div>
 
-      {/* MOBILE & TABLET NAVIGATION DRAWER */}
+      {/* MOBILE DRAWER MENU */}
       {mobileMenuOpen && (
         <div
-          id="mobile-navigation-drawer"
+          id="mobile-game-menu"
           role="dialog"
-          aria-label="Menu điều hướng di động"
-          className="xl:hidden mt-2 mx-3 rounded-2xl bg-[#0E1F1D]/98 border border-[#F2D39B]/35 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.9)] backdrop-blur-xl"
+          aria-label="Menu điều hướng trên di động"
+          className="md:hidden bg-[#193D34]/98 border-b-2 border-[#F5CC72]/50 px-4 pt-3 pb-5 shadow-2xl"
         >
-          {/* Weather Selector inside Mobile Menu */}
-          <div className="mb-4">
-            <span className="block text-[11px] font-bold uppercase tracking-wider text-[#9BA8A3] mb-2">
-              Thời tiết & Thời gian môi trường
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {WEATHER_BUTTONS.map((btn) => {
-                const active = weather === btn.id;
+          <nav className="grid grid-cols-2 gap-2 mb-4">
+            {NAV_LINKS.map((link) => {
+              const Icon = link.icon;
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => {
+                    setActiveHash(link.href);
+                    setMobileMenuOpen(false);
+                    soundEngine.playSfx("interact", 0.3);
+                  }}
+                  className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#214E43] border border-[#F5CC72]/25 text-xs font-bold text-[#FFF6E5] active:bg-[#2B806A]"
+                >
+                  <Icon className="w-4 h-4 text-[#F5CC72] shrink-0" />
+                  <span>{link.label}</span>
+                </a>
+              );
+            })}
+          </nav>
+
+          {/* Weather & Radio Controls on Mobile */}
+          <div className="flex flex-col gap-2.5 pt-3 border-t border-[#F5CC72]/20">
+            <div className="grid grid-cols-4 gap-1.5">
+              {WEATHER_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                const active = weather === opt.id;
                 return (
                   <button
-                    key={btn.id}
+                    key={opt.id}
                     type="button"
-                    onClick={() => handleSelectWeather(btn.id)}
-                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    onClick={() => handleChangeWeather(opt.id)}
+                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
                       active
-                        ? "bg-[#F2D39B] text-[#142C2A] border-[#F7F3E8]"
-                        : "bg-[#142C2A] text-[#D9D2C5] border-[#F2D39B]/20"
+                        ? "bg-[#F5CC72] text-[#24160E] border-[#FFF6E5]"
+                        : "bg-[#122D26] text-[#FFF6E5]/80 border-[#F5CC72]/20"
                     }`}
                   >
-                    {btn.icon}
-                    <span>{btn.label}</span>
+                    <Icon className="w-4 h-4 mb-1" />
+                    <span>{opt.label}</span>
                   </button>
                 );
               })}
             </div>
-          </div>
 
-          {/* Section Links */}
-          <nav aria-label="Danh mục trang" className="grid grid-cols-2 gap-2 mb-4">
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  soundEngine.playSfx("interact", 0.25);
-                }}
-                className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#142C2A]/90 border border-[#F2D39B]/20 text-xs font-semibold text-[#F7F3E8] hover:border-[#F2D39B]"
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleToggleRadio}
+                className={`flex-1 py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer ${
+                  radioOn
+                    ? "bg-[#67AF65] text-[#FFF6E5] border-[#FFF6E5]"
+                    : "bg-[#122D26] text-[#FFF6E5] border-[#F5CC72]/35"
+                }`}
               >
-                <Compass className="w-3.5 h-3.5 text-[#F2D39B] shrink-0" />
-                <span>{link.label}</span>
+                <Radio className="w-4 h-4" />
+                <span>{radioOn ? "Đang bật Đài Quê" : "Bật Đài Phát Thanh"}</span>
+              </button>
+
+              <a
+                href="#trong-rau"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 py-2.5 px-3 rounded-xl btn-game-primary text-xs font-extrabold flex items-center justify-center gap-1.5"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Vào xóm chơi</span>
               </a>
-            ))}
-          </nav>
-
-          {/* Bottom Mobile CTA & Radio */}
-          <div className="flex items-center justify-between gap-2 pt-3 border-t border-[#F2D39B]/15">
-            <button
-              type="button"
-              onClick={handleToggleRadio}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#142C2A] border border-[#F2D39B]/30 text-xs font-semibold text-[#F7F3E8]"
-            >
-              <Radio className="w-4 h-4 text-[#F2D39B]" />
-              <span>{radioActive && !muted ? "Đang bật Radio Làng" : "Nghe Radio Làng"}</span>
-            </button>
-
-            <a
-              href="#vong-quay-nhan-qua"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-gradient-to-b from-[#F2D39B] to-[#C88412] text-[#142C2A] text-xs font-extrabold"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Quay Lộc Đầu Mùa ({spinsLeft} Lượt)</span>
-            </a>
+            </div>
           </div>
         </div>
       )}

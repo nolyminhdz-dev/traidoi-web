@@ -13,6 +13,7 @@ import {
   Sparkles,
   Zap,
   X,
+  Award,
 } from "lucide-react";
 import { WHEEL_PRIZES, WheelPrize } from "@/lib/game-data";
 import { soundEngine } from "@/lib/sound-engine";
@@ -116,6 +117,48 @@ const CELESTIAL_RUNES = [
   "TƯỜNG",
 ];
 
+const STORAGE_KEY = "traidoi_wheel_state_v2";
+
+const TIER_STYLES: Record<
+  WheelPrize["tier"],
+  {
+    badgeBg: string;
+    badgeBorder: string;
+    badgeText: string;
+    glowColor: string;
+    haloBg: string;
+  }
+> = {
+  "THẦN THOẠI": {
+    badgeBg: "bg-gradient-to-r from-[#DC2626] via-[#F59E0B] to-[#DC2626]",
+    badgeBorder: "border-[#FFD700]",
+    badgeText: "text-[#FFFBEB]",
+    glowColor: "rgba(239,68,68,0.65)",
+    haloBg: "radial-gradient(circle, rgba(239,68,68,0.45) 0%, transparent 70%)",
+  },
+  "CỰC PHẨM": {
+    badgeBg: "bg-gradient-to-r from-[#7C3AED] via-[#C026D3] to-[#7C3AED]",
+    badgeBorder: "border-[#E879F9]",
+    badgeText: "text-[#FDF2F8]",
+    glowColor: "rgba(168,85,247,0.6)",
+    haloBg: "radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
+  },
+  "QUÝ HIẾM": {
+    badgeBg: "bg-gradient-to-r from-[#059669] via-[#10B981] to-[#059669]",
+    badgeBorder: "border-[#6EE7B7]",
+    badgeText: "text-[#ECFDF5]",
+    glowColor: "rgba(16,185,129,0.55)",
+    haloBg: "radial-gradient(circle, rgba(16,185,129,0.4) 0%, transparent 70%)",
+  },
+  "LỘC QUÊ": {
+    badgeBg: "bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-[#D97706]",
+    badgeBorder: "border-[#FDE68A]",
+    badgeText: "text-[#1C110B]",
+    glowColor: "rgba(245,158,11,0.55)",
+    haloBg: "radial-gradient(circle, rgba(245,158,11,0.4) 0%, transparent 70%)",
+  },
+};
+
 interface SparkParticle {
   id: number;
   dx: number;
@@ -155,6 +198,52 @@ export default function KarmaWheelSection({
   const chargeTimerRef = useRef<number | null>(null);
   const lastPegIndexRef = useRef<number>(-1);
   const sparkIdRef = useRef<number>(0);
+  const isHydratedRef = useRef<boolean>(false);
+
+  // Restore wheel progress from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.claimedSeals)) {
+          setClaimedSeals(parsed.claimedSeals);
+        }
+        if (typeof parsed.incenseLit === "boolean") {
+          setIncenseLit(parsed.incenseLit);
+        }
+        if (Array.isArray(parsed.lootBag)) {
+          const rehydratedLoot: WheelPrize[] = parsed.lootBag
+            .map((item: { id: string }) =>
+              WHEEL_PRIZES.find((p) => p.id === item.id) || (item as WheelPrize)
+            )
+            .filter(Boolean);
+          setLootBag(rehydratedLoot);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to read traidoi_wheel_state_v2", err);
+    } finally {
+      isHydratedRef.current = true;
+    }
+  }, []);
+
+  // Save wheel progress to localStorage
+  useEffect(() => {
+    if (!isHydratedRef.current) return;
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          claimedSeals,
+          incenseLit,
+          lootBag,
+        })
+      );
+    } catch (err) {
+      console.warn("Failed to write traidoi_wheel_state_v2", err);
+    }
+  }, [claimedSeals, incenseLit, lootBag]);
 
   useEffect(() => {
     return () => {
@@ -216,7 +305,7 @@ export default function KarmaWheelSection({
           setClapperAngle(kick);
           setTimeout(() => setClapperAngle(0), 55);
 
-          // Emit 8-12 Real-time Incandescent Peg Sparks (Ethan Cole Spec)
+          // Real-time Incandescent Peg Sparks
           const sparkCount = velocityRatio > 0.4 ? 8 : 4;
           const newSparks: SparkParticle[] = Array.from({ length: sparkCount }).map(
             (_, si) => ({
@@ -362,15 +451,18 @@ export default function KarmaWheelSection({
 
   return (
     <section
-      id="vong-quay-nhan-qua"
+      id="quay-loc"
       className="relative py-20 px-3 sm:px-6 max-w-7xl mx-auto select-none overflow-hidden"
     >
-      {/* 1. TRUE 3D CHISELED GOLD HEADER — ZERO MIDDLE DOTS */}
+      {/* Anchor compatibility */}
+      <div id="vong-quay-nhan-qua" className="absolute -top-12 left-0 pointer-events-none" aria-hidden="true" />
+
+      {/* 1. TRUE 3D CHISELED GOLD HEADER — COMPACT & DIRECT */}
       <div className="mb-12">
         <Wood3DPlaqueTitle
-          eyebrow="ĐẠI TRẬN THẦN CƠ MIẾU ĐỎ"
-          title="THIÊN CƠ ĐẠI LUÂN ĐỔI VẬN"
-          subtitle="Nhấn giữ Trống Đồng ở tâm hoặc kéo Cần Gạt Rồng Vàng bên phải để khai mở vận may"
+          eyebrow="BÁU VẬT MIẾU THỔ ĐỊA"
+          title="VÒNG QUAY TRỐNG ĐỒNG — NHẬN LỘC ĐẦU MÙA"
+          subtitle="Nhấn giữ Trống Đồng ở tâm hoặc kéo Cần Gạt bên phải để quay thưởng và mở bộ sưu tập báu vật."
           align="center"
           size="xl"
         />
@@ -427,7 +519,7 @@ export default function KarmaWheelSection({
               })}
             </div>
 
-            {/* 1-Tap Incense Button + Rising Golden Smoke */}
+            {/* 1-Tap Incense Button */}
             <button
               type="button"
               onClick={handleLightIncense}
@@ -523,7 +615,7 @@ export default function KarmaWheelSection({
                 })}
               </div>
 
-              {/* 4 Floating Paper Talismans Orbiting in 3D Space (paper-seal.png) */}
+              {/* 4 Floating Paper Talismans Orbiting in 3D Space */}
               {[0, 90, 180, 270].map((angle, ti) => (
                 <motion.img
                   key={ti}
@@ -779,6 +871,8 @@ export default function KarmaWheelSection({
 
               {/* =============================================================
                   CENTER 3D SHRINE HUB BUTTON (HOLD TO CHARGE OR CLICK TO SPIN)
+                  Wrapper preserves translateZ(48px) and pointer-events-none,
+                  button has pointer-events-auto to eliminate hover glitching.
               ============================================================== */}
               <div
                 style={{ transform: "translateZ(48px)" }}
@@ -830,7 +924,7 @@ export default function KarmaWheelSection({
             </motion.div>
 
             {/* ===============================================================
-                3D DRAGON PULL-LEVER ON THE RIGHT FLANK (DANTE ROSSI & ETHAN COLE)
+                3D DRAGON PULL-LEVER ON THE RIGHT FLANK
             ================================================================ */}
             <div className="hidden md:flex flex-col items-center ml-5 z-30">
               <div className="text-[10px] font-black uppercase tracking-wider text-[#FFD700] mb-2 text-center">
@@ -853,7 +947,7 @@ export default function KarmaWheelSection({
                     }}
                     whileHover={{ scale: 1.12 }}
                     title="Kéo Cần Gạt Rồng Vàng để Quay Lộc Cực Đại!"
-                    className=" -top-2 w-12 h-12 rounded-full bg-gradient-to-b from-[#FFE885] via-[#EF4444] to-[#7F1D1D] border-3 border-[#FFD700] shadow-[0_8px_18px_rgba(0,0,0,0.9),0_0_20px_rgba(239,68,68,0.7)] flex items-center justify-center cursor-pointer"
+                    className="-top-2 w-12 h-12 rounded-full bg-gradient-to-b from-[#FFE885] via-[#EF4444] to-[#7F1D1D] border-3 border-[#FFD700] shadow-[0_8px_18px_rgba(0,0,0,0.9),0_0_20px_rgba(239,68,68,0.7)] flex items-center justify-center cursor-pointer"
                   >
                     <Zap className="w-5 h-5 text-[#FFF8E6] fill-current" />
                   </motion.button>
@@ -890,12 +984,12 @@ export default function KarmaWheelSection({
                   ? `“${wonPrize.thoDiaQuote}”`
                   : isSpinning
                   ? "“Xoay cho mạnh vô con! Lộc lớn đang tới!”"
-                  : "“Nhấn giữ Trống Đồng hoặc kéo Cần Gạt Rồng Vàng bên cạnh để phóng lộc!”"}
+                  : "“Nhấn giữ Trống Đồng hoặc kéo Cần Gạt bên cạnh để nhận lộc!”"}
               </p>
             </div>
           </div>
 
-          {/* 3-Slot Visual Loot Chest with Clear Empty State */}
+          {/* 3-Slot Visual Loot Chest */}
           <div className="carved-wood-box rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-xs font-black uppercase tracking-widest text-[#FFD700]">
@@ -913,9 +1007,11 @@ export default function KarmaWheelSection({
                 return (
                   <div
                     key={slotIdx}
-                    className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center p-1.5 relative ${
+                    onClick={() => item && setWonPrize(item)}
+                    title={item ? `${item.fullName} (Nhấn để xem chi tiết)` : "Ngăn Trống"}
+                    className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center p-1.5 relative transition-all ${
                       item
-                        ? "bg-[#261810] border-[#FFD700] shadow-[0_0_15px_rgba(255,215,0,0.25)]"
+                        ? "bg-[#261810] border-[#FFD700] shadow-[0_0_15px_rgba(255,215,0,0.25)] cursor-pointer hover:scale-105"
                         : "bg-[#0D0704]/70 border-dashed border-[#513727]"
                     }`}
                   >
@@ -945,83 +1041,181 @@ export default function KarmaWheelSection({
 
             {lootBag.length === 0 && (
               <p className="mt-2.5 text-[11px] text-[#D9D2C5] text-center">
-                Chưa có vật phẩm. Hãy nhấn giữ Trống Đồng để quay lộc đầu mùa!
+                Chưa có vật phẩm. Hãy quay lộc để khai mở túi báu!
               </p>
             )}
           </div>
         </div>
       </div>
 
-      {/* 3. ULTRA-CLEAN VISUAL PRIZE REVEAL MODAL */}
+      {/* 3. PREMIUM REWARD REVEAL MODAL DIALOG */}
       <AnimatePresence>
         {wonPrize && (
           <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.95 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setWonPrize(null)}
             role="dialog"
+            aria-modal="true"
             aria-label={`Phần thưởng đạt được: ${wonPrize.fullName}`}
-            className="mt-10 carved-wood-box rounded-3xl p-6 sm:p-8 relative overflow-hidden"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto"
           >
-            <button
-              type="button"
-              onClick={() => setWonPrize(null)}
-              aria-label="Đóng thông báo phần thưởng"
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#1C110B] border border-[#F2D39B]/40 flex items-center justify-center text-[#F7F3E8] hover:border-[#F2D39B] cursor-pointer z-20"
+            <motion.div
+              initial={{ scale: 0.78, opacity: 0, y: 28 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.85, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 320, damping: 24 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg rounded-3xl p-6 sm:p-8 overflow-hidden text-center select-none shadow-[0_25px_60px_rgba(0,0,0,0.95)] border-2 border-[#FFD700]"
+              style={{
+                background: "linear-gradient(180deg, #2A170D 0%, #170C06 50%, #0A0503 100%)",
+              }}
             >
-              <X className="w-4 h-4" />
-            </button>
+              {/* Rotating Golden Godray Climax Backdrop */}
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                className="absolute -top-32 left-1/2 -translate-x-1/2 w-[540px] h-[540px] pointer-events-none opacity-20"
+                style={{
+                  background:
+                    "conic-gradient(from 0deg, transparent 0deg, #FFD700 20deg, transparent 40deg, #FFD700 60deg, transparent 80deg, #FFD700 100deg, transparent 120deg, #FFD700 140deg, transparent 160deg, #FFD700 180deg, transparent 200deg, #FFD700 220deg, transparent 240deg, #FFD700 260deg, transparent 280deg, #FFD700 300deg, transparent 320deg, #FFD700 340deg, transparent 360deg)",
+                  maskImage: "radial-gradient(circle, black 30%, transparent 70%)",
+                  WebkitMaskImage: "radial-gradient(circle, black 30%, transparent 70%)",
+                }}
+              />
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-              <div className="w-28 h-28 rounded-2xl bg-[#0D0704] border-2 border-[#FFD700] flex items-center justify-center p-3 shrink-0 shadow-[0_0_40px_rgba(255,215,0,0.4)]">
-                <img
-                  src={wonPrize.sprite}
-                  alt={wonPrize.fullName}
-                  className="w-20 h-20 object-contain pixelated"
-                />
-              </div>
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setWonPrize(null)}
+                aria-label="Đóng thông báo phần thưởng"
+                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-[#1C110B] border border-[#FFD700]/50 flex items-center justify-center text-[#F7F3E8] hover:border-[#FFD700] hover:scale-105 active:scale-95 transition-all cursor-pointer z-20 shadow-md"
+              >
+                <X className="w-4 h-4" />
+              </button>
 
-              <div className="flex-1 text-center md:text-left">
-                <span className="inline-block text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md bg-[#FFD700] text-[#1C110B] mb-2">
-                  {wonPrize.tier} • +{wonPrize.moneyBonus.toLocaleString("vi-VN")} Xu Làng
-                </span>
-                <h3 className="font-wood text-2xl sm:text-3xl text-[#FFE89E]">
-                  {wonPrize.fullName}
-                </h3>
-                <p className="text-sm font-bold text-[#FFD700] mt-1">
-                  “{wonPrize.thoDiaQuote}”
-                </p>
-              </div>
+              <div className="relative z-10 flex flex-col items-center">
+                {/* 1. Rarity Tier Badge */}
+                {(() => {
+                  const style = TIER_STYLES[wonPrize.tier] || TIER_STYLES["LỘC QUÊ"];
+                  return (
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-4 py-1 rounded-full border text-[11px] font-black uppercase tracking-widest shadow-lg ${style.badgeBg} ${style.badgeBorder} ${style.badgeText}`}
+                        style={{
+                          boxShadow: `0 0 18px ${style.glowColor}`,
+                        }}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>ĐỘ HIẾM: {wonPrize.tier}</span>
+                      </span>
+                    </div>
+                  );
+                })()}
 
-              <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
-                <div className="flex items-center gap-2 bg-[#0D0704] border-2 border-[#FFD700] rounded-xl px-4 py-2.5">
-                  <code className="text-sm font-black text-[#FFD700] tracking-wider">
-                    {giftCode}
-                  </code>
-                  <button
-                    type="button"
-                    aria-label="Sao chép mã kỷ niệm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(giftCode);
-                      setCopied(true);
-                      soundEngine.playSfx("interact", 0.4);
+                {/* 2. Medallion Pedestal with Item Image */}
+                <div className="relative my-2 sm:my-3 flex items-center justify-center">
+                  <div
+                    className="absolute w-36 h-36 rounded-full blur-xl pointer-events-none animate-pulse"
+                    style={{
+                      background:
+                        TIER_STYLES[wonPrize.tier]?.glowColor ||
+                        "rgba(255,215,0,0.5)",
                     }}
-                    className="p-1.5 rounded-lg bg-[#FFD700] text-[#1C110B] font-bold cursor-pointer"
-                  >
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </button>
+                  />
+                  <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-gradient-to-b from-[#1C1008] to-[#0A0503] border-3 border-[#FFD700] p-3 flex items-center justify-center shadow-[0_0_35px_rgba(255,215,0,0.35)]">
+                    <motion.img
+                      src={wonPrize.sprite}
+                      alt={wonPrize.fullName}
+                      initial={{ scale: 0.5, rotate: -8 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: "spring", stiffness: 350, damping: 18 }}
+                      className="w-20 h-20 sm:w-24 sm:h-24 object-contain pixelated drop-shadow-[0_8px_16px_rgba(0,0,0,0.8)]"
+                    />
+                  </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => launchSpin(1)}
-                  className="px-6 py-3 rounded-xl bg-gradient-to-b from-[#FFE082] to-[#C99A35] border-2 border-white text-[#1C110B] font-black text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-[0_4px_0_#5C2804]"
-                >
-                  <RotateCw className="w-4 h-4" />
-                  <span>Quay Tiếp ({spinsLeft})</span>
-                </button>
+                {/* 3. Item Full Name */}
+                <h3 className="font-wood text-2xl sm:text-3xl text-[#FFE89E] tracking-wide leading-tight mt-2 mb-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
+                  {wonPrize.fullName}
+                </h3>
+
+                {/* 4. Value Reward (+Xu Làng) */}
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-[#0D0704] border border-[#FFD700]/70 text-[#FFD700] font-black text-sm sm:text-base my-2 shadow-inner">
+                  <Coins className="w-4 h-4 text-[#FFD700] animate-bounce" />
+                  <span>+{wonPrize.moneyBonus.toLocaleString("vi-VN")} Xu Làng</span>
+                </div>
+
+                {/* 5. Ông Thổ Địa Quote */}
+                <p className="text-xs sm:text-sm text-[#FFD700]/90 italic font-semibold max-w-sm mx-auto mb-4">
+                  “{wonPrize.thoDiaQuote}”
+                </p>
+
+                {/* 6. Gift Code Commemorative Seal */}
+                {giftCode && (
+                  <div className="flex items-center justify-center gap-2 bg-[#120A05] border border-[#88603D] rounded-xl px-3 py-1.5 max-w-xs mx-auto mb-5">
+                    <span className="text-[10px] font-bold text-[#A88B73] uppercase tracking-wider">
+                      MÃ KỶ NIỆM:
+                    </span>
+                    <code className="text-xs font-black text-[#FFD700] tracking-wider font-mono">
+                      {giftCode}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(giftCode);
+                        setCopied(true);
+                        soundEngine.playSfx("interact", 0.4);
+                      }}
+                      aria-label="Sao chép mã kỷ niệm"
+                      className="p-1.5 rounded bg-[#FFD700] text-[#1C110B] hover:bg-[#FFE082] transition-colors cursor-pointer"
+                      title="Sao chép mã"
+                    >
+                      {copied ? (
+                        <Check className="w-3.5 h-3.5" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* 7. Action Buttons: "Nhận thưởng & Tiếp tục" & "Quay tiếp" */}
+                <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-3 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWonPrize(null);
+                      soundEngine.playSfx("coins", 0.6);
+                    }}
+                    className="w-full sm:flex-1 py-3 px-5 rounded-xl bg-gradient-to-b from-[#2B6657] via-[#204F43] to-[#14352D] border-2 border-[#BEF264] text-[#FFF8E6] font-black text-xs sm:text-sm uppercase tracking-wider shadow-[0_4px_0_#0D241E,0_0_15px_rgba(190,242,100,0.3)] hover:brightness-110 active:translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Check className="w-4 h-4 text-[#BEF264]" />
+                    <span>Nhận thưởng & Tiếp tục</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWonPrize(null);
+                      setTimeout(() => {
+                        launchSpin(1);
+                      }, 140);
+                    }}
+                    disabled={spinsLeft <= 0}
+                    className={`w-full sm:flex-1 py-3 px-5 rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      spinsLeft > 0
+                        ? "bg-gradient-to-b from-[#FFE082] via-[#FFD700] to-[#C99A35] border-2 border-white text-[#1C110B] shadow-[0_4px_0_#5C2804,0_0_15px_rgba(255,215,0,0.4)] hover:brightness-105 active:translate-y-0.5"
+                        : "bg-[#2A1C14] border-2 border-[#513727] text-[#7A6352] cursor-not-allowed opacity-60"
+                    }`}
+                  >
+                    <RotateCw className="w-4 h-4" />
+                    <span>Quay Tiếp {spinsLeft > 0 ? `(${spinsLeft})` : ""}</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
