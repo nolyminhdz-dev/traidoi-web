@@ -34,17 +34,50 @@ class SoundEngine {
       | "denied"
       | "build"
       | "fire-crackle"
-      | "bird",
+      | "bird"
+      | "hoe"
+      | "seed",
     volume = 0.5
   ) {
     if (this.muted || typeof window === "undefined") return;
+    const mappedName = name === "hoe" ? "build" : name === "seed" ? "plant" : name;
     try {
-      const audio = new Audio(`/game-assets/audio/${name}.wav`);
+      const audio = new Audio(`/game-assets/audio/${mappedName}.wav`);
       audio.volume = Math.min(1, Math.max(0, volume));
       audio.play().catch(() => {});
     } catch {
       // ignore autoplay blocks
     }
+  }
+
+  public toggleMute(): boolean {
+    this.muted = !this.muted;
+    if (this.muted) {
+      if (this.radioAudio) this.radioAudio.pause();
+      if (this.rainAudio) this.rainAudio.pause();
+    } else if (this.isRadioPlaying && this.radioAudio) {
+      this.radioAudio.play().catch(() => {});
+    }
+    return this.muted;
+  }
+
+  public switchTrack(track: "radio" | "village"): boolean {
+    if (typeof window === "undefined") return false;
+    const src =
+      track === "radio"
+        ? "/game-assets/audio/village-radio.ogg"
+        : "/game-assets/audio/garden.wav";
+    if (this.radioAudio) {
+      this.radioAudio.pause();
+    }
+    this.radioAudio = new Audio(src);
+    this.radioAudio.loop = true;
+    this.radioAudio.volume = 0.32;
+    this.isRadioPlaying = track === "radio";
+    if (!this.muted) {
+      this.radioAudio.play().catch(() => {});
+    }
+    return this.isRadioPlaying;
   }
 
   public setWeatherAudio(weather: "sun" | "rain" | "sunset" | "night") {

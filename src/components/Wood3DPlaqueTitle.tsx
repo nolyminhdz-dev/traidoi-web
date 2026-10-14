@@ -10,13 +10,13 @@ interface Wood3DPlaqueTitleProps {
   subtitle?: string;
   align?: "center" | "left";
   size?: "md" | "lg" | "xl";
+  as?: "h1" | "h2" | "h3" | "div";
 }
 
 /**
  * Radiant "VERSION TRAILER" Luminous Ivory-Champagne Gold Section Header
- * - Tall, razor-sharp Vietnamese block typography with pure white-ivory to champagne gold gradient
- * - Crimson flame wisps & floating golden diamond ember accents
- * - Zero middle dots (·)
+ * - Semantic heading level (defaults to h2 for section headers)
+ * - Tall, razor-sharp Vietnamese block typography
  */
 export default function Wood3DPlaqueTitle({
   eyebrow,
@@ -24,6 +24,7 @@ export default function Wood3DPlaqueTitle({
   subtitle,
   align = "center",
   size = "lg",
+  as = "h2",
 }: Wood3DPlaqueTitleProps) {
   return (
     <div
@@ -37,22 +38,22 @@ export default function Wood3DPlaqueTitle({
           initial={{ opacity: 0, y: -6 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="inline-flex items-center gap-2.5 px-4 py-1 rounded-full bg-gradient-to-r from-[#2A1208]/90 via-[#3D1B0C]/95 to-[#2A1208]/90 border border-[#FDE68A]/60 shadow-[0_4px_16px_rgba(0,0,0,0.85),0_0_15px_rgba(253,224,71,0.22)] mb-2.5"
+          className="inline-flex items-center gap-2.5 px-4 py-1 rounded-full bg-[#142C2A]/90 border border-[#F2D39B]/45 shadow-[0_4px_16px_rgba(0,0,0,0.65)] mb-2.5"
         >
-          <span className="w-2 h-2 rotate-45 bg-[#FFFBEB] shadow-[0_0_8px_#FDE047]" />
+          <span className="w-2 h-2 rotate-45 bg-[#FFFBEB] shadow-[0_0_8px_#F2D39B]" />
           <span
-            className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.2em]"
+            className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.18em]"
             style={{
               fontFamily: "var(--font-game-display), sans-serif",
               backgroundImage:
-                "linear-gradient(180deg, #FFFFFF 0%, #FFF5C0 60%, #F59E0B 100%)",
+                "linear-gradient(180deg, #FFFFFF 0%, #FFF5C0 60%, #F2D39B 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
           >
             {eyebrow}
           </span>
-          <span className="w-2 h-2 rotate-45 bg-[#EF4444] shadow-[0_0_8px_#EF4444]" />
+          <span className="w-2 h-2 rotate-45 bg-[#2B6657] border border-[#F2D39B]/70" />
         </motion.div>
       )}
 
@@ -62,19 +63,20 @@ export default function Wood3DPlaqueTitle({
           text={title}
           size={size === "xl" ? "xl" : size === "lg" ? "lg" : "md"}
           align={align}
+          as={as}
         />
       </div>
 
-      {/* Luminous Golden Trailer Divider Line (for centered section headers) */}
+      {/* Luminous Golden Trailer Divider Line */}
       {align === "center" && (
-        <div className="relative mt-2 flex items-center justify-center w-56 sm:w-80 h-2">
-          <div className="w-full h-[1.5px] bg-gradient-to-r from-transparent via-[#FFF6C8] to-transparent opacity-85 shadow-[0_0_10px_#FDE047]" />
-          <span className="absolute w-2.5 h-2.5 rotate-45 bg-[#FFFFFF] border border-[#F59E0B] shadow-[0_0_10px_#FDE047]" />
+        <div className="relative mt-2 flex items-center justify-center w-52 sm:w-72 h-2" aria-hidden="true">
+          <div className="w-full h-[1.5px] bg-gradient-to-r from-transparent via-[#F2D39B] to-transparent opacity-80" />
+          <span className="absolute w-2.5 h-2.5 rotate-45 bg-[#F7F3E8] border border-[#A96745]" />
         </div>
       )}
 
       {subtitle && (
-        <p className="mt-2.5 text-sm sm:text-base font-semibold text-[#FFFDF2]/90 max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+        <p className="mt-3 text-sm sm:text-base font-medium text-[#D9D2C5] max-w-2xl leading-relaxed">
           {subtitle}
         </p>
       )}

@@ -1,505 +1,593 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import confetti from "canvas-confetti";
-import { Eye, Sparkles, Flame, Droplets, Car, Volume2 } from "lucide-react";
-import { soundEngine } from "@/lib/sound";
-import { AnimatedNpcPortrait, ThoDiaAnimatedSprite } from "./SpriteAnimator";
+import {
+  Sparkles,
+  Compass,
+  Sun,
+  CloudRain,
+  Sunset,
+  Moon,
+  Flame,
+  Droplets,
+  Music,
+  Eye,
+  ChevronDown,
+  Clock,
+  Layers,
+} from "lucide-react";
+import { soundEngine } from "@/lib/sound-engine";
+import { ThoDiaAnimatedSprite } from "./SpriteAnimator";
 import { WeatherMode } from "./WeatherEngineCanvas";
 import Wood3DPlaqueTitle from "./Wood3DPlaqueTitle";
 import BitmapWoodText from "./BitmapWoodText";
 
 interface HeroDioramaProps {
+  weather: WeatherMode;
+  setWeather?: (w: WeatherMode) => void;
   onSelectOriginBonus: () => void;
   onBonusWallet?: (amount: number) => void;
-  weather: WeatherMode;
 }
 
-const SINGLE_HEART_ORIGINS = [
+const LIVING_WORLD_STATES: Record<
+  WeatherMode,
   {
-    id: "both",
-    label: "Còn cả Ông Bà",
-    who: "BÀ NGOẠI",
-    portrait: "/game-assets/pixel/portrait-grandma.png",
-    portraitTalk: "/game-assets/pixel/portrait-grandma-talk.png",
-    heartLine:
-      "“Trời ơi cục vàng của ngoại, mới về sao không báo trước để bà nấu cơm?”",
+    id: WeatherMode;
+    label: string;
+    timeRange: string;
+    title: string;
+    atmosphereDesc: string;
+    lightingSpec: string;
+    npcActivity: string;
+    npcName: string;
+    npcPortrait: string;
+    sceneFilter: string;
+    overlayClass: string;
+    emissiveOpacity: number;
+  }
+> = {
+  sun: {
+    id: "sun",
+    label: "Bình Minh Nắng Sớm",
+    timeRange: "06:00 — 11:30",
+    title: "Nắng Sớm Chiếu Qua Tán Dừa & Sương Mai Tan Trên Ao Sen",
+    atmosphereDesc:
+      "Ánh nắng ban mai ấm áp chiếu xiên qua rặng dừa Bến Dừa, làm bừng sáng mái ngói miếu cổ và những luống rau muống còn đọng sương đêm.",
+    lightingSpec: "Directional Warm Sunlight (#F2D39B) • Tán xạ hạt nắng nhẹ • Bóng đổ tự nhiên",
+    npcActivity: "Cô Sáu Hiền dọn sạp rau củ tươi mới hái ra chợ sớm; Bà Ngoại quét lá ngoài hiên.",
+    npcName: "Cô Sáu Hiền",
+    npcPortrait: "/game-assets/pixel/portrait-vendor-talk.png",
+    sceneFilter: "brightness-[1.03] saturate-[1.08]",
+    overlayClass: "from-[#142C2A]/35 via-transparent to-[#0E1F1D]/90",
+    emissiveOpacity: 0,
   },
-  {
-    id: "ba",
-    label: "Chỉ còn Bà Ngoại",
-    who: "BÀ NGOẠI",
-    portrait: "/game-assets/pixel/portrait-grandma.png",
-    portraitTalk: "/game-assets/pixel/portrait-grandma-talk.png",
-    heartLine:
-      "“Vô thắp cho ông mày nén nhang trước đi con, ổng trông mày dữ lắm.”",
+  rain: {
+    id: "rain",
+    label: "Mưa Rào Miền Tây",
+    timeRange: "13:30 — 15:30",
+    title: "Cơn Mưa Rào Nhiệt Đới Tưới Mát Mảnh Vườn Quê",
+    atmosphereDesc:
+      "Những hạt mưa chéo rơi xuống mặt ao tạo vòng sóng gợn lăn tăn. Cơn mưa tự động tưới ẩm ba luống đất sau hè mà người chơi không cần múc nước.",
+    lightingSpec: "Cool Overcast Ambient (#1E293B) • Hiệu ứng gợn nước mặt đất • Sương ẩm nhẹ",
+    npcActivity: "Bà con kéo bạt che sạp hàng; Ông Thổ Địa đứng dưới mái hiên miếu phe phẩy quạt mo.",
+    npcName: "Ông Thổ Địa",
+    npcPortrait: "/game-assets/pixel/portrait-tho-dia.png",
+    sceneFilter: "brightness-[0.82] contrast-[1.08] saturate-[0.9]",
+    overlayClass: "from-slate-950/55 via-sky-950/25 to-[#0E1F1D]/92",
+    emissiveOpacity: 0.25,
   },
-  {
-    id: "ong",
-    label: "Chỉ còn Ông Ngoại",
-    who: "ÔNG NGOẠI",
-    portrait: "/game-assets/pixel/portrait-npc-nam.png",
-    portraitTalk: "/game-assets/pixel/portrait-npc-nam-talk.png",
-    heartLine:
-      "“Bà mày mất rồi, nhà vắng hoe. Mày về ở chơi với ông mấy bữa nghen.”",
+  sunset: {
+    id: "sunset",
+    label: "Hoàng Hôn Bến Nước",
+    timeRange: "16:30 — 18:30",
+    title: "Ráng Chiều Đỏ Cam & Tiếng Đờn Kìm Vọng Cổ Bên Bến Đò",
+    atmosphereDesc:
+      "Bầu trời chuyển sắc vàng cam ấm áp phản chiếu xuống dòng kênh. Khói bếp từ những mái nhà bắt đầu bay lên, báo hiệu giờ cơm chiều sum họp.",
+    lightingSpec: "Golden-Hour Directional Gradient (#FB923C -> #A96745) • Chớm sáng đèn dầu (45%)",
+    npcActivity: "Nghệ nhân Vinh mang đờn kìm ra bến đò so dây, dạo khúc vọng cổ chiều quê.",
+    npcName: "Nghệ Nhân Vinh",
+    npcPortrait: "/game-assets/pixel/portrait-npc-vinh-talk.png",
+    sceneFilter: "brightness-[0.94] sepia-[0.16] saturate-[1.25]",
+    overlayClass: "from-amber-950/45 via-rose-950/20 to-[#0E1F1D]/92",
+    emissiveOpacity: 0.55,
   },
-  {
-    id: "memories",
-    label: "Ông Bà trong ký ức",
-    who: "CHÚ MƯỜI HÀNG XÓM",
-    portrait: "/game-assets/pixel/portrait-npc-dung.png",
-    portraitTalk: "/game-assets/pixel/portrait-npc-dung-talk.png",
-    heartLine:
-      "“Nhà ngoại con chú vẫn quét dọn mỗi ngày. Vô thắp nén nhang cho ấm cửa ấm nhà.”",
+  night: {
+    id: "night",
+    label: "Đêm Đèn Lồng & Đom Đóm",
+    timeRange: "19:30 — 04:30",
+    title: "Đêm Tĩnh Mịch, Đom Đóm Bay & Ánh Đèn Dầu Miếu Cổ",
+    atmosphereDesc:
+      "Khi màn đêm buông xuống, lớp bản đồ phát sáng (Emissive Pass) của Miếu Ông Thổ Địa và đèn lồng tự động rực sáng giữa những đàn đom đóm lập lòe.",
+    lightingSpec: "Deep Night Ambient (#091413) • Dual-Pass Emissive Light Mask (100%) • Đom đóm điểm sáng",
+    npcActivity: "Chú Mười và bà con ngồi uống trà trước hiên nhà, nghe đài phát thanh đêm khuya.",
+    npcName: "Chú Mười",
+    npcPortrait: "/game-assets/pixel/portrait-npc-dung-talk.png",
+    sceneFilter: "brightness-[0.58] contrast-[1.15] saturate-[0.88]",
+    overlayClass: "from-[#060E0D]/75 via-[#091514]/45 to-[#0E1F1D]/95",
+    emissiveOpacity: 1,
   },
-];
-
-const WEATHER_STAGE_OVERLAY: Record<WeatherMode, string> = {
-  sun: "from-amber-400/15 via-transparent to-[#0E0805]/95",
-  rain: "from-sky-900/45 via-slate-950/35 to-[#060D14]/95",
-  sunset: "from-orange-600/30 via-rose-950/25 to-[#14070B]/95",
-  night: "from-indigo-950/65 via-[#070B16]/55 to-[#04060C]/98",
 };
 
 export default function HeroDiorama({
+  weather,
+  setWeather,
   onSelectOriginBonus,
   onBonusWallet,
-  weather,
 }: HeroDioramaProps) {
-  const [selectedId, setSelectedId] = useState<string>("both");
-  const [bonusClaimed, setBonusClaimed] = useState(false);
   const [inspectWorld, setInspectWorld] = useState(false);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [showEmissiveOnly, setShowEmissiveOnly] = useState(false);
+  const [incenseCount, setIncenseCount] = useState(0);
+  const [moCombo, setMoCombo] = useState(0);
+  const [wateredCount, setWateredCount] = useState(0);
+  const [actionToast, setActionToast] = useState<string | null>(null);
 
-  // Instant 4-Action Playable Village Toy Dock State (Julian Mercer Spec)
-  const [playedActions, setPlayedActions] = useState<string[]>([]);
-  const [activeToast, setActiveToast] = useState<string | null>(null);
-  const [moCombo, setMoCombo] = useState<number>(1);
-  const [screenShake, setScreenShake] = useState(false);
-  const [dockBonusClaimed, setDockBonusClaimed] = useState(false);
+  useEffect(() => {
+    if (!inspectWorld) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setInspectWorld(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [inspectWorld]);
 
-  const currentOrigin =
-    SINGLE_HEART_ORIGINS.find((o) => o.id === selectedId) ||
-    SINGLE_HEART_ORIGINS[0];
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const nx = (e.clientX - rect.left) / rect.width - 0.5;
-    const ny = (e.clientY - rect.top) / rect.height - 0.5;
-    setTilt({ x: -ny * 7, y: nx * 9 });
+  const triggerToast = (msg: string) => {
+    setActionToast(msg);
+    setTimeout(() => setActionToast(null), 2600);
   };
 
-  const triggerVillageToy = (actionId: string, message: string) => {
-    setActiveToast(message);
-    const nextPlayed = playedActions.includes(actionId)
-      ? playedActions
-      : [...playedActions, actionId];
-    setPlayedActions(nextPlayed);
-
-    if (nextPlayed.length === 4 && !dockBonusClaimed) {
-      setDockBonusClaimed(true);
+  const handleLightShrineIncense = () => {
+    const next = incenseCount + 1;
+    setIncenseCount(next);
+    soundEngine.playBronzeGong();
+    soundEngine.playSfx("fire-crackle", 0.45);
+    if (next === 1) {
       onSelectOriginBonus();
-      soundEngine.play("success");
-      confetti({
-        particleCount: 80,
-        spread: 75,
-        origin: { y: 0.7 },
-        colors: ["#FFD700", "#10B981", "#F97316"],
-      });
-      setActiveToast("ĐỦ 4 TRẢI NGHIỆM QUÊ HƯƠNG — TẶNG +1 LƯỢT QUAY ĐẠI CÁT!");
+      triggerToast("Đã thắp nén nhang đầu mùa (+1 Lượt Quay Lộc)");
+    } else {
+      onBonusWallet?.(500);
+      triggerToast("Hương trầm lan tỏa (+500 Xu Làng)");
     }
   };
 
+  const handleKnockBambooMo = () => {
+    const next = moCombo + 1;
+    setMoCombo(next);
+    soundEngine.playBambooPegTick(Math.min(1, 0.35 + (next % 8) * 0.08));
+    onBonusWallet?.(200);
+    triggerToast(`Tiếng mõ tre thanh tịnh (+200 Xu Làng)`);
+  };
+
+  const handleScoopRainwater = () => {
+    const next = wateredCount + 1;
+    setWateredCount(next);
+    soundEngine.playSfx("water", 0.55);
+    onBonusWallet?.(300);
+    triggerToast("Nước mưa mát lành từ lu đất nung (+300 Xu Làng)");
+  };
+
+  const currentLivingState = LIVING_WORLD_STATES[weather];
+
   return (
-    <section className="relative pt-24 pb-8 px-3 sm:px-6 max-w-7xl mx-auto select-none">
-      <div
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setTilt({ x: 0, y: 0 })}
-        style={{ perspective: "1500px" }}
-        className="w-full"
+    <>
+      {/* =====================================================================
+          SECTION 10: CINEMATIC HERO SECTION
+      ====================================================================== */}
+      <section
+        id="cong-lang"
+        aria-label="Giới thiệu TRẢI ĐỜI"
+        className="relative min-h-[88vh] pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col justify-between select-none"
       >
-        <motion.div
-          animate={{
-            rotateX: tilt.x,
-            rotateY: tilt.y,
-            x: screenShake ? [-6, 6, -5, 5, 0] : 0,
-          }}
-          transition={{ type: "spring", stiffness: 130, damping: 20 }}
-          style={{ transformStyle: "preserve-3d" }}
-          className="relative min-h-[660px] lg:min-h-[720px] rounded-[32px] border-4 border-[#B88244] shadow-[0_10px_0_#261207,0_40px_100px_rgba(0,0,0,0.95)] overflow-hidden bg-[#120B07] flex flex-col justify-between p-5 sm:p-8 lg:p-10"
-        >
-          {/* 4 REAL CARVED WOOD CORNERS (Correct /decor/ path!) */}
+        {/* HERO DIORAMA CONTAINER */}
+        <div className="relative rounded-3xl overflow-hidden border border-[#F2D39B]/35 shadow-[0_28px_80px_rgba(0,0,0,0.85)] min-h-[580px] sm:min-h-[640px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
+          {/* Corner Traditional Wood Ornaments */}
           <img
             src="/game-assets/ornaments/decor/corner-wood-tl.png"
             alt=""
-            className="w-14 h-14 absolute top-2 left-2 z-30 pointer-events-none pixelated drop-shadow-lg"
+            aria-hidden="true"
+            className="absolute top-3 left-3 w-8 h-8 object-contain pixelated z-30 pointer-events-none opacity-85"
           />
           <img
             src="/game-assets/ornaments/decor/corner-wood-tr.png"
             alt=""
-            className="w-14 h-14 absolute top-2 right-2 z-30 pointer-events-none pixelated drop-shadow-lg"
+            aria-hidden="true"
+            className="absolute top-3 right-3 w-8 h-8 object-contain pixelated z-30 pointer-events-none opacity-85"
           />
           <img
             src="/game-assets/ornaments/decor/corner-wood-bl.png"
             alt=""
-            className="w-14 h-14 absolute bottom-2 left-2 z-30 pointer-events-none pixelated drop-shadow-lg"
+            aria-hidden="true"
+            className="absolute bottom-3 left-3 w-8 h-8 object-contain pixelated z-30 pointer-events-none opacity-85"
           />
           <img
             src="/game-assets/ornaments/decor/corner-wood-br.png"
             alt=""
-            className="w-14 h-14 absolute bottom-2 right-2 z-30 pointer-events-none pixelated drop-shadow-lg"
+            aria-hidden="true"
+            className="absolute bottom-3 right-3 w-8 h-8 object-contain pixelated z-30 pointer-events-none opacity-85"
           />
 
-          {/* LAYER 1: FULL-BLEED GAME WORLD SCREENSHOT */}
-          <div className="absolute inset-0 z-0 overflow-hidden">
+          {/* BACKGROUND LAYER: Authentic Xóm Bến Dừa World Scene + Controlled Lighting */}
+          <div className="absolute inset-0 z-0 overflow-hidden bg-[#0E1F1D]">
             <img
               src="/game-assets/screenshots/world-thodia.png"
-              alt="Xóm Bến Dừa"
-              style={{
-                transform: `scale(1.06) translate3d(${tilt.y * -1.3}px, ${tilt.x * 1.3}px, 0)`,
-              }}
-              className={`w-full h-full object-cover object-center transition-all duration-700 ${
-                weather === "night"
-                  ? "brightness-[0.55] contrast-125 saturate-110"
-                  : weather === "rain"
-                  ? "brightness-[0.72] contrast-115 hue-rotate-[8deg]"
-                  : weather === "sunset"
-                  ? "brightness-[0.82] contrast-115 sepia-[0.22]"
-                  : "brightness-[0.94] contrast-105"
-              }`}
+              alt="Khung cảnh Xóm Bến Dừa và Miếu Ông Thổ Địa trong TRẢI ĐỜI"
+              className={`w-full h-full object-cover object-center pixelated transition-all duration-1000 ${currentLivingState.sceneFilter}`}
             />
+            {/* Directional Sunlight / Atmospheric Vignette Overlay for Readability */}
             <div
-              className={`absolute inset-0 bg-gradient-to-b transition-colors duration-700 ${WEATHER_STAGE_OVERLAY[weather]}`}
+              className={`absolute inset-0 bg-gradient-to-t transition-colors duration-1000 ${currentLivingState.overlayClass}`}
             />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0E1F1D]/90 via-[#0E1F1D]/45 to-transparent" />
           </div>
 
-          {/* LAYER 2: TOP BAR — 3D CARVED WOOD TITLE & CLEAN VIEW TOGGLE */}
-          <div
-            style={{ transform: "translateZ(35px)" }}
-            className="relative z-20 flex flex-wrap items-center justify-between gap-4"
-          >
-            <Wood3DPlaqueTitle
-              eyebrow="THẾ GIỚI XÃ HỘI PIXEL VIỆT NAM"
-              title="CỔNG LÀNG BẾN DỪA"
-              align="left"
-              size="md"
-            />
+          {/* TOP BAR: Development Status Pill & Clean View Toggle */}
+          <div className="relative z-20 flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0E1F1D]/85 backdrop-blur-md border border-[#F2D39B]/40 text-xs font-semibold text-[#F7F3E8]">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>
+                Bản thử nghiệm Pixel Build #658 • Định hướng dài hạn: Unity 6 Stylized 3D
+              </span>
+            </div>
 
             <button
+              type="button"
               onClick={() => {
                 setInspectWorld(!inspectWorld);
                 soundEngine.playSfx("interact", 0.35);
               }}
-              className="flex items-center gap-2 bg-[#160D08]/90 hover:bg-[#2A1910] border-2 border-[#C99A35] text-[#FFF8E6] px-4 py-2 rounded-xl text-xs font-extrabold shadow-[0_4px_0_#261207,0_10px_24px_rgba(0,0,0,0.85)] cursor-pointer transition-all"
+              className="inline-flex items-center gap-2 bg-[#0E1F1D]/85 hover:bg-[#142C2A] border border-[#F2D39B]/45 text-[#F7F3E8] px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer"
             >
-              <Eye className="w-4 h-4 text-[#FFD700]" />
-              <span>{inspectWorld ? "Hiện Giao Diện" : "Ngắm Trọn Xóm Làng"}</span>
+              <Eye className="w-3.5 h-3.5 text-[#F2D39B]" />
+              <span>{inspectWorld ? "Hiện Nội Dung Giới Thiệu" : "Ngắm Trọn Cảnh Làng"}</span>
             </button>
           </div>
 
-          {/* LAYER 3: CENTER 3D FLOATING SHRINE + GRANDPARENTS EMOTIONAL HOOK */}
+          {/* CENTER: BRAND STORYTELLING & CLEAR VALUE PROPOSITION */}
           <AnimatePresence>
             {!inspectWorld && (
               <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                style={{ transform: "translateZ(55px)" }}
-                className="relative z-20 my-auto py-4 flex flex-col gap-5"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                transition={{ duration: 0.45 }}
+                className="relative z-20 my-auto max-w-2xl py-6"
               >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-                  {/* Left: Floating 3D Miếu Ông Thổ Địa & Live Animated Sprite */}
-                  <div className="lg:col-span-5 flex items-center gap-4 bg-[#160D08]/85 backdrop-blur-xl border-2 border-[#B88244] rounded-2xl p-4 shadow-[0_6px_0_#241106,0_24px_50px_rgba(0,0,0,0.9)]">
-                    <div className="relative shrink-0">
-                      <img
-                        src="/game-assets/pixel/mieu.png"
-                        alt="Miếu Đỏ"
-                        className="w-20 h-20 object-contain pixelated drop-shadow-[0_10px_18px_rgba(0,0,0,0.9)]"
-                      />
-                      {(weather === "night" || weather === "sunset") && (
-                        <img
-                          src="/game-assets/pixel/tho-dia-mieu__emit.png"
-                          alt=""
-                          className="absolute inset-0 w-20 h-20 object-contain pixelated mix-blend-screen animate-pulse"
-                        />
-                      )}
-                    </div>
-                    <div className="shrink-0 -ml-3">
-                      <ThoDiaAnimatedSprite mode="laugh" size={84} />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="inline-block text-[10px] font-black uppercase tracking-widest text-[#FFD700] bg-[#CB5245]/40 border border-[#FFD700]/50 px-2.5 py-0.5 rounded-md">
-                        ÔNG THỔ ĐỊA BẾN DỪA
-                      </span>
-                      <p className="text-sm sm:text-base font-extrabold text-[#FFF8E6] leading-snug">
-                        “Mới về quê ngoại hả con? Ghé miếu quay lộc đầu mùa nghen!”
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Right: 1-Sentence Psychological Hook */}
-                  <div className="lg:col-span-7 bg-[#160D08]/90 backdrop-blur-2xl border-2 border-[#FFD700]/75 rounded-2xl p-5 sm:p-6 shadow-[0_8px_0_#261207,0_25px_70px_rgba(0,0,0,0.95)]">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                      <BitmapWoodText
-                        text="Ông bà ngoại của bạn còn chứ?"
-                        size="md"
-                        align="left"
-                      />
-                      <span className="text-[11px] font-black text-[#BEF264] bg-[#285943]/80 border border-[#BEF264]/50 px-3 py-1 rounded-lg">
-                        Chạm chọn nhận +1 Lượt Quay
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                      {SINGLE_HEART_ORIGINS.map((item) => {
-                        const active = selectedId === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            onClick={() => {
-                              setSelectedId(item.id);
-                              soundEngine.playSfx("interact", 0.45);
-                              if (!bonusClaimed) {
-                                setBonusClaimed(true);
-                                onSelectOriginBonus();
-                                soundEngine.playSfx("success", 0.5);
-                              }
-                            }}
-                            className={`px-3 py-2.5 rounded-xl border-2 text-xs font-extrabold transition-all cursor-pointer ${
-                              active
-                                ? "bg-gradient-to-b from-[#FFE082] to-[#C99A35] border-white text-[#1C110B] shadow-[0_4px_0_#5C3409,0_0_20px_rgba(255,215,0,0.6)] -translate-y-0.5"
-                                : "bg-[#24160E]/90 border-[#6B4930] text-[#EAD8AE] hover:border-[#C99A35]"
-                            }`}
-                          >
-                            {item.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={currentOrigin.id}
-                        initial={{ opacity: 0, x: 8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -8 }}
-                        className="flex items-center gap-3.5 bg-[#FFF8E6] text-[#22150E] rounded-xl p-3.5 border-2 border-[#88603D] shadow-inner"
-                      >
-                        <AnimatedNpcPortrait
-                          baseSrc={currentOrigin.portrait}
-                          talkSrc={currentOrigin.portraitTalk}
-                          isTalking={true}
-                          size={58}
-                          alt={currentOrigin.who}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[10px] font-black uppercase tracking-wider text-[#8A332B]">
-                            {currentOrigin.who}
-                          </div>
-                          <p className="font-wood text-base sm:text-lg text-[#1C110B] leading-snug">
-                            {currentOrigin.heartLine}
-                          </p>
-                        </div>
-                      </motion.div>
-                    </AnimatePresence>
-                  </div>
+                <div className="mb-2">
+                  <BitmapWoodText
+                    text="TRẢI ĐỜI"
+                    size="hero"
+                    align="left"
+                    as="h1"
+                  />
                 </div>
 
-                {/* =============================================================
-                    INSTANT PLAYABLE 4-ACTION VILLAGE TOY DOCK (JULIAN MERCER)
-                ============================================================== */}
-                <div className="carved-wood-box rounded-2xl p-3.5 sm:p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-[#FFD700]" />
-                      <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-[#FFE89E]">
-                        CHẠM THỬ 4 THÚ VUI XÓM BẾN DỪA ({playedActions.length}/4 NHẬN THÊM 1 LƯỢT QUAY)
-                      </span>
-                    </div>
-                    {activeToast && (
-                      <motion.span
-                        key={activeToast}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-xs font-black text-emerald-300 bg-emerald-950/90 border border-emerald-400/50 px-3 py-1 rounded-lg"
-                      >
-                        {activeToast}
-                      </motion.span>
-                    )}
-                  </div>
+                <p
+                  className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#F7F3E8] leading-snug mb-3 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]"
+                >
+                  Một thế giới Việt Nam để sống, khám phá và kết nối.
+                </p>
 
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    {/* Toy 1: Thắp Nhang Miếu Đỏ */}
-                    <motion.button
-                      whileHover={{ y: -3 }}
-                      whileTap={{ y: 2 }}
-                      onClick={() => {
-                        soundEngine.playBronzeGong();
-                        soundEngine.playSfx("coins", 0.5);
-                        if (onBonusWallet) onBonusWallet(888);
-                        triggerVillageToy(
-                          "incense",
-                          "🕯️ Khói nhang trầm bay lên — Ông Địa ban +888đ Lộc May!"
-                        );
-                      }}
-                      className={`flex items-center gap-3 p-2.5 rounded-xl border-2 text-left transition cursor-pointer ${
-                        playedActions.includes("incense")
-                          ? "bg-amber-500/25 border-[#FFD700]"
-                          : "bg-[#1A0F09] hover:bg-[#28180E] border-[#6B4930]"
-                      }`}
-                    >
-                      <img
-                        src="/game-assets/pixel/mieu.png"
-                        alt=""
-                        className="w-10 h-10 object-contain pixelated shrink-0"
-                      />
-                      <div>
-                        <div className="text-xs font-black text-[#FFE89E]">
-                          1. Thắp Nhang Miếu
-                        </div>
-                        <div className="text-[11px] font-bold text-amber-300/80">
-                          Nghe chuông đồng +888đ
-                        </div>
-                      </div>
-                    </motion.button>
+                <p className="text-sm sm:text-base text-[#D9D2C5] leading-relaxed mb-6 max-w-xl drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
+                  Bắt đầu từ Xóm Bến Dừa miền Tây. Gặp gỡ những con người thân thuộc, tự tay chăm sóc mảnh vườn quê ngoại, khám phá 5 vùng đất văn hóa và tạo nên câu chuyện của riêng mình.
+                </p>
 
-                    {/* Toy 2: Gõ Mõ Tre Giải Nghiệp */}
-                    <motion.button
-                      whileHover={{ y: -3 }}
-                      whileTap={{ y: 2 }}
-                      onClick={() => {
-                        soundEngine.playBambooPegTick(1.4 + (moCombo % 5) * 0.2);
-                        const next = moCombo + 1;
-                        setMoCombo(next);
-                        triggerVillageToy(
-                          "wooden-fish",
-                          `🪵 Cốc! Cốc! Combo ${next}x — Tan biến muộn phiền deadline!`
-                        );
-                      }}
-                      className={`flex items-center gap-3 p-2.5 rounded-xl border-2 text-left transition cursor-pointer ${
-                        playedActions.includes("wooden-fish")
-                          ? "bg-amber-500/25 border-[#FFD700]"
-                          : "bg-[#1A0F09] hover:bg-[#28180E] border-[#6B4930]"
-                      }`}
-                    >
-                      <img
-                        src="/game-assets/ornaments/decor/bamboo-corner-collar.png"
-                        alt=""
-                        className="w-10 h-10 object-contain pixelated shrink-0"
-                      />
-                      <div>
-                        <div className="text-xs font-black text-[#FFE89E]">
-                          2. Gõ Mõ Tre Làng
-                        </div>
-                        <div className="text-[11px] font-bold text-amber-300/80">
-                          Combo {moCombo}x Tịnh Tâm
-                        </div>
-                      </div>
-                    </motion.button>
+                {/* Primary & Secondary CTAs (Pointing to Real Interactive Sections) */}
+                <div className="flex flex-wrap items-center gap-3.5">
+                  <a
+                    href="#vuon-nha-ngoai"
+                    onClick={() => soundEngine.playBronzeGong()}
+                    className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-b from-[#FFF3C4] via-[#F2D39B] to-[#C88412] text-[#142C2A] font-extrabold text-sm sm:text-base shadow-[0_6px_0_#3A1D08,0_16px_35px_rgba(0,0,0,0.75)] hover:brightness-105 active:translate-y-0.5 transition-all"
+                  >
+                    <Sparkles className="w-4 h-4 fill-current" />
+                    <span>Chơi Thử Tương Tác Ngay</span>
+                  </a>
 
-                    {/* Toy 3: Múc Nước Lu Mưa */}
-                    <motion.button
-                      whileHover={{ y: -3 }}
-                      whileTap={{ y: 2 }}
-                      onClick={() => {
-                        soundEngine.playSfx("water", 0.65);
-                        triggerVillageToy(
-                          "rain-jar",
-                          "💧 Nước mưa trong lu mát lạnh — Ngọt lịm ký ức tuổi thơ!"
-                        );
-                      }}
-                      className={`flex items-center gap-3 p-2.5 rounded-xl border-2 text-left transition cursor-pointer ${
-                        playedActions.includes("rain-jar")
-                          ? "bg-amber-500/25 border-[#FFD700]"
-                          : "bg-[#1A0F09] hover:bg-[#28180E] border-[#6B4930]"
-                      }`}
-                    >
-                      <img
-                        src="/game-assets/ornaments/decor/basket.png"
-                        alt=""
-                        className="w-10 h-10 object-contain pixelated shrink-0"
-                      />
-                      <div>
-                        <div className="text-xs font-black text-[#FFE89E]">
-                          3. Múc Nước Lu Mưa
-                        </div>
-                        <div className="text-[11px] font-bold text-sky-300">
-                          Gáo dừa mát rượi
-                        </div>
-                      </div>
-                    </motion.button>
-
-                    {/* Toy 4: Đạp Ga Ferrari SF90 Giữa Xóm */}
-                    <motion.button
-                      whileHover={{ y: -3 }}
-                      whileTap={{ y: 2 }}
-                      onClick={() => {
-                        soundEngine.playSfx("build", 0.6);
-                        setScreenShake(true);
-                        setTimeout(() => setScreenShake(false), 500);
-                        triggerVillageToy(
-                          "ferrari",
-                          "🏎️ Vác Ferrari SF90 XX nẹt pô qua cầu khỉ — Cả xóm chạy ra coi!"
-                        );
-                      }}
-                      className={`flex items-center gap-3 p-2.5 rounded-xl border-2 text-left transition cursor-pointer ${
-                        playedActions.includes("ferrari")
-                          ? "bg-amber-500/25 border-[#FFD700]"
-                          : "bg-[#1A0F09] hover:bg-[#28180E] border-[#6B4930]"
-                      }`}
-                    >
-                      <img
-                        src="/game-assets/pixel/body.png"
-                        alt=""
-                        className="w-10 h-10 object-contain pixelated shrink-0"
-                      />
-                      <div>
-                        <div className="text-xs font-black text-[#FFE89E]">
-                          4. Nẹt Pô Siêu Xe
-                        </div>
-                        <div className="text-[11px] font-bold text-rose-400">
-                          Ferrari SF90 XX Giữa Làng
-                        </div>
-                      </div>
-                    </motion.button>
-                  </div>
+                  <a
+                    href="#ban-do-viet-nam"
+                    onClick={() => soundEngine.playSfx("interact", 0.4)}
+                    className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-[#142C2A]/90 hover:bg-[#2B6657]/80 border border-[#F2D39B]/50 text-[#F7F3E8] font-bold text-sm sm:text-base backdrop-blur-md transition-all"
+                  >
+                    <Compass className="w-4 h-4 text-[#F2D39B]" />
+                    <span>Khám Phá 5 Vùng Đất</span>
+                  </a>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* LAYER 4: BOTTOM ACTION — SINGLE GIANT 3D GOLDEN GONG CTA */}
-          <div
-            style={{ transform: "translateZ(65px)" }}
-            className="relative z-20 flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-white/15"
-          >
-            <a
-              href="#vong-quay-nhan-qua"
-              onClick={() => soundEngine.playBronzeGong()}
-              className="inline-flex items-center gap-3 bg-gradient-to-b from-[#FFE082] via-[#F59E0B] to-[#B45309] text-[#1C110B] font-black text-sm sm:text-base px-7 py-3.5 rounded-2xl border-2 border-[#FFF8E6] shadow-[0_6px_0_#5C2804,0_15px_35px_rgba(245,158,11,0.55)] hover:-translate-y-0.5 active:translate-y-1 transition-all"
-            >
-              <span>BƯỚC VÀO ĐẠI LUÂN QUAY LỘC ÔNG ĐỊA</span>
-            </a>
+          {/* BOTTOM BAR: Ambient NPC Greeting & Subtle Scroll Cue */}
+          <div className="relative z-20 flex flex-wrap items-end justify-between gap-4 pt-4 border-t border-[#F2D39B]/20">
+            <div className="flex items-center gap-3 bg-[#0E1F1D]/85 backdrop-blur-md border border-[#F2D39B]/30 rounded-2xl px-3.5 py-2 max-w-md">
+              <div className="shrink-0 -my-1">
+                <ThoDiaAnimatedSprite mode="laugh" size={56} />
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-[#F2D39B]">
+                  Ông Thổ Địa Bến Dừa
+                </span>
+                <p className="text-xs sm:text-sm font-medium text-[#F7F3E8] leading-snug">
+                  “Mới về xóm nhỏ hả con? Chuyển thử Nắng — Mưa — Chiều — Đêm ở góc trên để ngắm cảnh quê mình nghen!”
+                </p>
+              </div>
+            </div>
 
-            <div className="flex items-center gap-2">
-              {[
-                "/game-assets/pixel/body.png",
-                "/game-assets/mining/giant-diamond.png",
-                "/game-assets/fish/ca-ho.png",
-                "/game-assets/koi/koi-tricolor.png",
-              ].map((src, i) => (
-                <div
-                  key={i}
-                  className="w-11 h-11 rounded-xl bg-[#160D08]/90 border-2 border-[#88603D] flex items-center justify-center p-1.5 shadow-lg"
-                >
-                  <img src={src} alt="" className="w-full h-full object-contain pixelated" />
+            <a
+              href="#the-living-world"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-[#D9D2C5] hover:text-[#F2D39B] transition-colors py-1"
+            >
+              <span>Cuộn xuống khám phá thế giới</span>
+              <ChevronDown className="w-4 h-4 animate-bounce text-[#F2D39B]" />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          SECTION 11: THE LIVING WORLD (THẾ GIỚI SỐNG ĐỘNG THEO THỜI GIAN)
+      ====================================================================== */}
+      <section
+        id="the-living-world"
+        aria-label="Thế giới sống động theo thời gian và thời tiết"
+        className="relative py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-16 select-none"
+      >
+        <div className="mb-10">
+          <Wood3DPlaqueTitle
+            eyebrow="MÔI TRƯỜNG & ÁNH SÁNG SỐNG ĐỘNG"
+            title="THẾ GIỚI THỞ THEO NHỊP THỜI GIAN"
+            subtitle="Chuyển đổi giữa Sáng, Mưa, Hoàng Hôn và Đêm để quan sát cách ánh sáng môi trường, bản đồ phát sáng (Emissive Pass) và nhịp sinh hoạt của cư dân thay đổi."
+            align="center"
+            size="xl"
+          />
+        </div>
+
+        {/* 4 Time/Weather Selector Tabs */}
+        <div
+          role="tablist"
+          aria-label="Chọn thời gian và thời tiết trong Xóm Bến Dừa"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 mb-6"
+        >
+          {(
+            [
+              { id: "sun", icon: <Sun className="w-4 h-4" /> },
+              { id: "rain", icon: <CloudRain className="w-4 h-4" /> },
+              { id: "sunset", icon: <Sunset className="w-4 h-4" /> },
+              { id: "night", icon: <Moon className="w-4 h-4" /> },
+            ] as const
+          ).map((item) => {
+            const st = LIVING_WORLD_STATES[item.id];
+            const active = weather === item.id;
+            return (
+              <button
+                key={item.id}
+                role="tab"
+                type="button"
+                aria-selected={active}
+                onClick={() => {
+                  setWeather?.(item.id);
+                  soundEngine.playSfx(item.id === "rain" ? "water" : "interact", 0.4);
+                }}
+                className={`flex flex-col items-start p-3.5 sm:p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                  active
+                    ? "bg-[#2B6657]/55 border-[#F2D39B] shadow-[0_10px_25px_rgba(0,0,0,0.5)]"
+                    : "surface-editorial hover:border-[#F2D39B]/45"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F2D39B]">
+                    {item.icon}
+                    <span>{st.label}</span>
+                  </span>
+                  <span className="text-[11px] font-medium text-[#D9D2C5]">
+                    {st.timeRange}
+                  </span>
                 </div>
-              ))}
+                <span className="text-xs text-[#D9D2C5] line-clamp-1">
+                  {st.npcName}: {st.npcActivity}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Interactive Split Showcase: Live Environment Viewport + Atmospheric Inspector */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          {/* Left 7 Cols: Interactive Lighting & Emissive Stage */}
+          <div className="lg:col-span-7 relative rounded-3xl overflow-hidden border border-[#F2D39B]/35 bg-[#081211] min-h-[360px] sm:min-h-[420px] flex flex-col justify-between p-5">
+            <img
+              src="/game-assets/screenshots/world-thodia.png"
+              alt={currentLivingState.title}
+              className={`absolute inset-0 w-full h-full object-cover pixelated transition-all duration-700 ${
+                showEmissiveOnly
+                  ? "brightness-[0.18] contrast-[1.3] saturate-[0.5]"
+                  : currentLivingState.sceneFilter
+              }`}
+            />
+            <div
+              className={`absolute inset-0 bg-gradient-to-t transition-opacity duration-700 ${currentLivingState.overlayClass}`}
+            />
+
+            {/* Top Lighting Spec Bar */}
+            <div className="relative z-10 flex flex-wrap items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0E1F1D]/90 border border-[#F2D39B]/35 text-xs font-semibold text-[#F2D39B]">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Khung giờ game: {currentLivingState.timeRange}</span>
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmissiveOnly((prev) => !prev);
+                  soundEngine.playSfx("interact", 0.35);
+                }}
+                aria-pressed={showEmissiveOnly}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer ${
+                  showEmissiveOnly
+                    ? "bg-[#F2D39B] text-[#142C2A] border-[#F7F3E8]"
+                    : "bg-[#0E1F1D]/90 text-[#F7F3E8] border-[#F2D39B]/35 hover:border-[#F2D39B]"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>
+                  {showEmissiveOnly ? "Đang soi lớp Emissive Light" : "Soi lớp phát sáng (Emissive)"}
+                </span>
+              </button>
+            </div>
+
+            {/* Center Shrine Emissive Demonstration Card */}
+            <div className="relative z-10 my-auto mx-auto flex flex-col items-center">
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-[#0E1F1D]/80 backdrop-blur-md border border-[#F2D39B]/45 flex items-center justify-center p-3 shadow-2xl">
+                <img
+                  src="/game-assets/pixel/mieu.png"
+                  alt="Miếu Ông Địa"
+                  className={`w-20 h-20 object-contain pixelated transition-all duration-500 ${
+                    showEmissiveOnly ? "brightness-[0.25]" : ""
+                  }`}
+                />
+                <img
+                  src="/game-assets/pixel/tho-dia-mieu__emit.png"
+                  alt="Lớp ánh sáng đèn dầu Miếu Ông Địa"
+                  style={{
+                    opacity: showEmissiveOnly ? 1 : currentLivingState.emissiveOpacity,
+                  }}
+                  className="absolute inset-0 m-auto w-20 h-20 object-contain pixelated mix-blend-screen transition-opacity duration-500 drop-shadow-[0_0_16px_rgba(245,158,11,0.95)]"
+                />
+              </div>
+              <span className="mt-2 px-3 py-0.5 rounded-full bg-[#0E1F1D]/90 border border-[#F2D39B]/30 text-[11px] font-semibold text-[#F2D39B]">
+                Miếu Đỏ + Lớp phát sáng{" "}
+                {Math.round((showEmissiveOnly ? 1 : currentLivingState.emissiveOpacity) * 100)}%
+              </span>
+            </div>
+
+            {/* Bottom Description Overlay */}
+            <div className="relative z-10 bg-[#0E1F1D]/90 backdrop-blur-md border border-[#F2D39B]/25 rounded-2xl p-4">
+              <h3 className="text-base sm:text-lg font-bold text-[#F7F3E8] mb-1">
+                {currentLivingState.title}
+              </h3>
+              <p className="text-xs sm:text-sm text-[#D9D2C5] leading-relaxed">
+                {currentLivingState.atmosphereDesc}
+              </p>
             </div>
           </div>
-        </motion.div>
-      </div>
-    </section>
+
+          {/* Right 5 Cols: Resident Schedule & Interactive Village Actions */}
+          <div className="lg:col-span-5 flex flex-col justify-between gap-4">
+            {/* Active Resident Schedule Box */}
+            <div className="surface-elevated-card rounded-3xl p-5">
+              <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-[#F2D39B] mb-2">
+                Nhịp sống cư dân theo giờ ({currentLivingState.timeRange})
+              </span>
+              <div className="flex items-center gap-3.5 bg-[#0E1F1D]/80 border border-[#F2D39B]/25 rounded-2xl p-3.5 mb-3">
+                <img
+                  src={currentLivingState.npcPortrait}
+                  alt={currentLivingState.npcName}
+                  className="w-14 h-14 rounded-xl object-contain pixelated bg-[#142C2A] border border-[#F2D39B]/40 p-1 shrink-0"
+                />
+                <div>
+                  <h4 className="text-sm font-bold text-[#F7F3E8]">
+                    {currentLivingState.npcName}
+                  </h4>
+                  <p className="text-xs text-[#D9D2C5] leading-relaxed mt-0.5">
+                    {currentLivingState.npcActivity}
+                  </p>
+                </div>
+              </div>
+              <div className="text-xs text-[#9BA8A3] bg-[#0E1F1D]/60 rounded-xl px-3.5 py-2.5 border border-[#F2D39B]/15">
+                <strong className="text-[#F2D39B]">Kỹ thuật ánh sáng: </strong>
+                {currentLivingState.lightingSpec}
+              </div>
+            </div>
+
+            {/* Interactive Village Life Micro-Actions (SVG Icons & Game Sprites, No Raw Emojis) */}
+            <div className="surface-elevated-card rounded-3xl p-5 flex-1 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#F2D39B]">
+                    Tương Tác Nhanh Tại Cổng Làng
+                  </h3>
+                  {actionToast && (
+                    <span className="text-xs font-bold text-emerald-300 bg-emerald-950/90 border border-emerald-400/50 px-2.5 py-0.5 rounded-full">
+                      {actionToast}
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-2.5">
+                  <button
+                    type="button"
+                    onClick={handleLightShrineIncense}
+                    className="w-full flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#0E1F1D]/85 hover:bg-[#142C2A] border border-[#F2D39B]/30 hover:border-[#F2D39B] transition-all cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#2B6657]/35 border border-[#F2D39B]/40 flex items-center justify-center shrink-0">
+                        <Flame className="w-5 h-5 text-[#F2D39B]" />
+                      </div>
+                      <div>
+                        <span className="block text-xs sm:text-sm font-bold text-[#F7F3E8]">
+                          Thắp Hương Miếu Ông Địa
+                        </span>
+                        <span className="block text-[11px] text-[#D9D2C5]">
+                          {incenseCount === 0
+                            ? "Nhận +1 Lượt Quay Lộc đầu mùa"
+                            : `Đã thắp ${incenseCount} nén nhang (+500 Xu Làng)`}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg bg-[#F2D39B]/15 text-[#F2D39B] text-xs font-bold shrink-0">
+                      Thắp hương
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleKnockBambooMo}
+                    className="w-full flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#0E1F1D]/85 hover:bg-[#142C2A] border border-[#F2D39B]/30 hover:border-[#F2D39B] transition-all cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#2B6657]/35 border border-[#F2D39B]/40 flex items-center justify-center shrink-0">
+                        <Music className="w-5 h-5 text-[#F2D39B]" />
+                      </div>
+                      <div>
+                        <span className="block text-xs sm:text-sm font-bold text-[#F7F3E8]">
+                          Gõ Mõ Tre Đầu Làng
+                        </span>
+                        <span className="block text-[11px] text-[#D9D2C5]">
+                          Âm thanh mộc mạc thanh tịnh (+200 Xu Làng • Nhịp {moCombo})
+                        </span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg bg-[#F2D39B]/15 text-[#F2D39B] text-xs font-bold shrink-0">
+                      Gõ nhịp
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleScoopRainwater}
+                    className="w-full flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#0E1F1D]/85 hover:bg-[#142C2A] border border-[#F2D39B]/30 hover:border-[#F2D39B] transition-all cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#2B6657]/35 border border-[#F2D39B]/40 flex items-center justify-center shrink-0">
+                        <Droplets className="w-5 h-5 text-sky-300" />
+                      </div>
+                      <div>
+                        <span className="block text-xs sm:text-sm font-bold text-[#F7F3E8]">
+                          Múc Nước Mưa Lu Đất Nung
+                        </span>
+                        <span className="block text-[11px] text-[#D9D2C5]">
+                          Nước mưa ngọt lành tưới rau (+300 Xu Làng • {wateredCount} gáo)
+                        </span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg bg-[#F2D39B]/15 text-[#F2D39B] text-xs font-bold shrink-0">
+                      Múc nước
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

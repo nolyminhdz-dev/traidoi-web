@@ -9,13 +9,48 @@
 }
 
 :root {
-  --wood-950: #0f0906;
-  --wood-900: #1c110b;
-  --wood-800: #2e1d14;
-  --wood-700: #4a2f20;
-  --paper-50: #fff8e6;
-  --paper-100: #f8edce;
-  --gold-glow: #ffd700;
+  /* ==========================================================================
+     1. CORE VIETNAMESE HERITAGE & ATMOSPHERIC PALETTE (SECTION IV.5)
+     ========================================================================== */
+  --color-forest-deep: #142C2A;
+  --color-jade-green: #2B6657;
+  --color-sunlight-gold: #F2D39B;
+  --color-earth-brown: #A96745;
+  --color-warm-ivory: #F7F3E8;
+
+  /* ==========================================================================
+     2. SEMANTIC DESIGN TOKENS (WCAG AA COMPLIANT)
+     ========================================================================== */
+  --bg-primary: #0E1F1D;
+  --bg-secondary: #142C2A;
+  --surface-primary: rgba(20, 44, 42, 0.82);
+  --surface-elevated: rgba(28, 56, 52, 0.92);
+  --surface-wood: rgba(34, 21, 14, 0.92);
+
+  --text-primary: #F7F3E8;
+  --text-secondary: #D9D2C5;
+  --text-muted: #9BA8A3;
+
+  --border-subtle: rgba(242, 211, 155, 0.18);
+  --border-strong: rgba(242, 211, 155, 0.52);
+
+  --accent-primary: #F2D39B;
+  --accent-secondary: #2B6657;
+  --accent-earth: #A96745;
+
+  --status-success: #34D399;
+  --status-warning: #FBBF24;
+  --status-error: #F87171;
+  --focus-ring: #F2D39B;
+
+  /* ==========================================================================
+     3. FLUID TYPOGRAPHY SCALE WITH CLAMP() (SECTION IV.6)
+     ========================================================================== */
+  --font-fluid-hero: clamp(2.25rem, 1.5rem + 3.2vw, 4.35rem);
+  --font-fluid-h2: clamp(1.65rem, 1.3rem + 1.5vw, 2.75rem);
+  --font-fluid-h3: clamp(1.2rem, 1.05rem + 0.65vw, 1.6rem);
+  --font-fluid-body: clamp(0.95rem, 0.9rem + 0.2vw, 1.08rem);
+  --font-fluid-caption: clamp(0.75rem, 0.72rem + 0.12vw, 0.85rem);
 }
 
 html {
@@ -24,13 +59,20 @@ html {
 
 body {
   font-family: var(--font-game-ui), "TraiDoiCrafted", system-ui, -apple-system, sans-serif;
-  background-color: #0f0906;
-  color: #fff8e6;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Visible Keyboard Focus Ring (WCAG 2.2 AA Accessibility) */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
 }
 
 /* ============================================================================
-   RADIANT "VERSION TRAILER" IVORY-CHAMPAGNE GOLD DISPLAY TYPOGRAPHY
+   BRAND DISPLAY & HEADING TYPOGRAPHY
 ============================================================================ */
 .font-wood {
   font-family: var(--font-game-display), "TraiDoiCrafted", system-ui, sans-serif;
@@ -47,14 +89,14 @@ body {
     #ffffff 0%,
     #fffdf5 28%,
     #fff3c4 54%,
-    #f6c85f 78%,
+    #f2d39b 78%,
     #c88412 100%
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 2px rgba(28, 10, 2, 0.95))
-    drop-shadow(0 4px 10px rgba(0, 0, 0, 0.85))
-    drop-shadow(0 0 14px rgba(255, 228, 135, 0.5));
+  filter: drop-shadow(0 2px 2px rgba(15, 10, 5, 0.92))
+    drop-shadow(0 4px 10px rgba(0, 0, 0, 0.75))
+    drop-shadow(0 0 14px rgba(242, 211, 155, 0.42));
 }
 
 .text-3d-jade {
@@ -64,9 +106,7 @@ body {
   background: linear-gradient(180deg, #ffffff 0%, #d1fae5 40%, #34d399 80%, #059669 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 2px #042f2e)
-    drop-shadow(0 4px 10px rgba(0, 0, 0, 0.85))
-    drop-shadow(0 0 14px rgba(52, 211, 153, 0.45));
+  filter: drop-shadow(0 2px 2px #042f2e) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.8));
 }
 
 .pixelated {
@@ -74,16 +114,34 @@ body {
   image-rendering: crisp-edges;
 }
 
-/* Stepped 3D Carved Wood Panel Architecture */
-.carved-wood-box {
-  background: linear-gradient(180deg, rgba(48, 29, 18, 0.94) 0%, rgba(19, 11, 6, 0.98) 100%);
-  border: 3px solid #b88244;
+/* ============================================================================
+   3-TIER SURFACE RHYTHM (PREVENTING REPETITIVE CARD FATIGUE)
+============================================================================ */
+/* Tier 1: Subtle Atmospheric Glass Surface (Editorial & Informational Sections) */
+.surface-editorial {
+  background: linear-gradient(180deg, rgba(20, 44, 42, 0.76) 0%, rgba(12, 28, 26, 0.9) 100%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+}
+
+/* Tier 2: Elevated Interactive Card Surface (World Map, Characters, Gallery) */
+.surface-elevated-card {
+  background: linear-gradient(180deg, rgba(26, 52, 48, 0.88) 0%, rgba(15, 31, 29, 0.95) 100%);
+  border: 1px solid rgba(242, 211, 155, 0.28);
   box-shadow:
-    inset 0 2px 0 rgba(255, 232, 163, 0.42),
-    inset 0 -4px 0 rgba(12, 6, 3, 0.92),
-    0 6px 0 #381c0b,
-    0 11px 0 #1c0c04,
-    0 28px 65px rgba(0, 0, 0, 0.95);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 20px 50px rgba(0, 0, 0, 0.65);
+}
+
+/* Tier 3: Diegetic Carved Wood Box (Reserved for In-Game Sandbox UI & Landmarks) */
+.carved-wood-box {
+  background: linear-gradient(180deg, rgba(44, 28, 18, 0.95) 0%, rgba(20, 12, 8, 0.98) 100%);
+  border: 2px solid rgba(242, 211, 155, 0.48);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 232, 163, 0.3),
+    0 6px 0 #261308,
+    0 24px 55px rgba(0, 0, 0, 0.85);
 }
 
 @keyframes floatOrb {
@@ -91,7 +149,7 @@ body {
     transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    transform: translate3d(8px, -18px, 0) scale(1.15);
+    transform: translate3d(6px, -12px, 0) scale(1.08);
   }
 }
 
@@ -101,8 +159,8 @@ body {
     transform: scale(0.98);
   }
   50% {
-    opacity: 0.7;
-    transform: scale(1.04);
+    opacity: 0.65;
+    transform: scale(1.03);
   }
 }
 
@@ -138,4 +196,18 @@ body {
 
 .animate-spin-reverse-slow {
   animation: spinReverseSlow 28s linear infinite;
+}
+
+/* ============================================================================
+   ACCESSIBILITY: PREFERS-REDUCED-MOTION (SECTION X.26 & XII.33)
+============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

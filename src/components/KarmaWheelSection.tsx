@@ -9,12 +9,13 @@ import {
   Copy,
   RotateCw,
   Coins,
-  Lock,
+  PackageOpen,
   Sparkles,
   Zap,
+  X,
 } from "lucide-react";
 import { WHEEL_PRIZES, WheelPrize } from "@/lib/game-data";
-import { soundEngine } from "@/lib/sound";
+import { soundEngine } from "@/lib/sound-engine";
 import { ThoDiaAnimatedSprite } from "./SpriteAnimator";
 import { WeatherMode } from "./WeatherEngineCanvas";
 import Wood3DPlaqueTitle from "./Wood3DPlaqueTitle";
@@ -278,7 +279,8 @@ export default function KarmaWheelSection({
     }, 420);
   };
 
-  const startCharge = () => {
+  const startCharge = (e: React.MouseEvent | React.TouchEvent) => {
+    if ("button" in e && e.button !== 0) return;
     if (isSpinning || spinsLeft <= 0) {
       if (spinsLeft <= 0) soundEngine.playSfx("denied", 0.5);
       return;
@@ -291,17 +293,42 @@ export default function KarmaWheelSection({
       current = Math.min(1, current + 0.08);
       setChargeLevel(current);
       soundEngine.playChargeTick(current);
-    }, 70);
+    }, 80);
   };
 
-  const releaseCharge = () => {
+  const releaseCharge = useCallback(() => {
     if (!isCharging) return;
-    if (chargeTimerRef.current) clearInterval(chargeTimerRef.current);
+    if (chargeTimerRef.current) {
+      clearInterval(chargeTimerRef.current);
+      chargeTimerRef.current = null;
+    }
     const finalPower = chargeLevel;
     setIsCharging(false);
     setChargeLevel(0);
-    launchSpin(0.6 + finalPower * 0.9);
-  };
+    launchSpin(0.65 + finalPower * 0.9);
+  }, [chargeLevel, isCharging, launchSpin]);
+
+  useEffect(() => {
+    if (!isCharging) return;
+    const handleGlobalUp = () => {
+      releaseCharge();
+    };
+    window.addEventListener("mouseup", handleGlobalUp);
+    window.addEventListener("touchend", handleGlobalUp);
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalUp);
+      window.removeEventListener("touchend", handleGlobalUp);
+    };
+  }, [isCharging, releaseCharge]);
+
+  useEffect(() => {
+    if (!wonPrize) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setWonPrize(null);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [wonPrize]);
 
   const handleLightIncense = () => {
     if (incenseLit) return;
@@ -391,8 +418,8 @@ export default function KarmaWheelSection({
                     <div className="text-left flex-1">
                       <div className="text-xs font-black">{seal.title}</div>
                       <div className="text-[11px] font-bold text-[#FFD700]">
-                        +{seal.rewardSpins} Lượt ❖ +
-                        {seal.rewardCash.toLocaleString("vi-VN")}đ
+                        +{seal.rewardSpins} Lượt • +
+                        {seal.rewardCash.toLocaleString("vi-VN")} Xu Làng
                       </div>
                     </div>
                   </button>
@@ -402,6 +429,7 @@ export default function KarmaWheelSection({
 
             {/* 1-Tap Incense Button + Rising Golden Smoke */}
             <button
+              type="button"
               onClick={handleLightIncense}
               disabled={incenseLit}
               className={`mt-4 w-full py-3 rounded-xl border-2 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
@@ -414,7 +442,7 @@ export default function KarmaWheelSection({
               <span>
                 {incenseLit
                   ? "ĐÃ DÂNG HƯƠNG (+1 LƯỢT)"
-                  : "🕯️ DÂNG NÉN NHANG NHẬN 1 LƯỢT"}
+                  : "DÂNG NÉN NHANG NHẬN 1 LƯỢT"}
               </span>
             </button>
           </div>
@@ -752,53 +780,53 @@ export default function KarmaWheelSection({
               {/* =============================================================
                   CENTER 3D SHRINE HUB BUTTON (HOLD TO CHARGE OR CLICK TO SPIN)
               ============================================================== */}
-              <motion.button
-                onMouseDown={startCharge}
-                onMouseUp={releaseCharge}
-                onMouseLeave={() => {
-                  if (isCharging) releaseCharge();
-                }}
-                onTouchStart={startCharge}
-                onTouchEnd={releaseCharge}
-                disabled={isSpinning}
-                whileHover={{ scale: isSpinning ? 1 : 1.08 }}
-                whileTap={{ scale: 0.92 }}
+              <div
                 style={{ transform: "translateZ(48px)" }}
-                className={`absolute w-32 h-32 sm:w-36 sm:h-36 rounded-full z-30 flex flex-col items-center justify-center border-4 transition-all cursor-pointer ${
-                  spinsLeft > 0 && !isSpinning
-                    ? "bg-gradient-to-b from-[#FFF8E6] via-[#FFD700] to-[#B45309] border-[#2C1A10] text-[#1C110B] shadow-[0_12px_30px_rgba(0,0,0,0.95),0_0_40px_rgba(255,215,0,0.75)]"
-                    : "bg-gradient-to-b from-[#4E3629] to-[#261810] border-[#88603D] text-[#A88B73]"
-                }`}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
               >
-                {/* Charge Progress Ring */}
-                {isCharging && (
-                  <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
-                    <circle
-                      cx="50%"
-                      cy="50%"
-                      r="46%"
-                      fill="none"
-                      stroke="#CB5245"
-                      strokeWidth="6"
-                      strokeDasharray={`${chargeLevel * 310} 310`}
-                    />
-                  </svg>
-                )}
+                <button
+                  type="button"
+                  onMouseDown={startCharge}
+                  onMouseUp={releaseCharge}
+                  onTouchStart={startCharge}
+                  onTouchEnd={releaseCharge}
+                  disabled={isSpinning}
+                  className={`pointer-events-auto relative w-32 h-32 sm:w-36 sm:h-36 rounded-full flex flex-col items-center justify-center border-4 transition-shadow duration-200 cursor-pointer active:scale-95 ${
+                    spinsLeft > 0 && !isSpinning
+                      ? "bg-gradient-to-b from-[#FFF8E6] via-[#FFD700] to-[#B45309] border-[#2C1A10] text-[#1C110B] shadow-[0_12px_30px_rgba(0,0,0,0.95),0_0_40px_rgba(255,215,0,0.75)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.95),0_0_60px_rgba(255,235,120,0.95)] hover:brightness-105"
+                      : "bg-gradient-to-b from-[#4E3629] to-[#261810] border-[#88603D] text-[#A88B73]"
+                  }`}
+                >
+                  {/* Charge Progress Ring */}
+                  {isCharging && (
+                    <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                      <circle
+                        cx="50%"
+                        cy="50%"
+                        r="46%"
+                        fill="none"
+                        stroke="#CB5245"
+                        strokeWidth="6"
+                        strokeDasharray={`${chargeLevel * 310} 310`}
+                      />
+                    </svg>
+                  )}
 
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#7C2D12]">
-                  {isSpinning
-                    ? "ĐANG XOAY"
-                    : isCharging
-                    ? `TỤ KHÍ ${Math.round(chargeLevel * 100)}%`
-                    : "TRỐNG ĐỒNG"}
-                </span>
-                <span className="font-wood text-xl sm:text-2xl leading-none my-0.5 text-[#1C110B]">
-                  {isSpinning ? "..." : "QUAY LỘC"}
-                </span>
-                <span className="mt-1 px-2.5 py-0.5 rounded-full bg-[#1C110B] text-[#FFD700] text-[10px] font-black">
-                  {spinsLeft} LƯỢT
-                </span>
-              </motion.button>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#7C2D12] pointer-events-none">
+                    {isSpinning
+                      ? "ĐANG XOAY"
+                      : isCharging
+                      ? `TỤ KHÍ ${Math.round(chargeLevel * 100)}%`
+                      : "TRỐNG ĐỒNG"}
+                  </span>
+                  <span className="font-wood text-xl sm:text-2xl leading-none my-0.5 text-[#1C110B] pointer-events-none">
+                    {isSpinning ? "..." : "QUAY LỘC"}
+                  </span>
+                  <span className="mt-1 px-2.5 py-0.5 rounded-full bg-[#1C110B] text-[#FFD700] text-[10px] font-black pointer-events-none">
+                    {spinsLeft} LƯỢT
+                  </span>
+                </button>
+              </div>
             </motion.div>
 
             {/* ===============================================================
@@ -867,15 +895,15 @@ export default function KarmaWheelSection({
             </div>
           </div>
 
-          {/* 3-Slot Visual Loot Chest */}
+          {/* 3-Slot Visual Loot Chest with Clear Empty State */}
           <div className="carved-wood-box rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-xs font-black uppercase tracking-widest text-[#FFD700]">
-                RƯƠNG LỘC ĐÃ TRÚNG
+                TÚI LỘC ĐÃ NHẬN
               </span>
               <span className="text-xs font-black text-[#BEF264] flex items-center gap-1">
                 <Coins className="w-3.5 h-3.5" />
-                {wallet.toLocaleString("vi-VN")}đ
+                {wallet.toLocaleString("vi-VN")} Xu Làng
               </span>
             </div>
 
@@ -888,7 +916,7 @@ export default function KarmaWheelSection({
                     className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center p-1.5 relative ${
                       item
                         ? "bg-[#261810] border-[#FFD700] shadow-[0_0_15px_rgba(255,215,0,0.25)]"
-                        : "bg-[#0D0704]/70 border-[#38251B]"
+                        : "bg-[#0D0704]/70 border-dashed border-[#513727]"
                     }`}
                   >
                     {item ? (
@@ -903,12 +931,23 @@ export default function KarmaWheelSection({
                         </span>
                       </>
                     ) : (
-                      <Lock className="w-4 h-4 text-[#513727]" />
+                      <>
+                        <PackageOpen className="w-4 h-4 text-[#6B4930]" />
+                        <span className="text-[9px] font-semibold text-[#8C7667] mt-1">
+                          Ngăn Trống
+                        </span>
+                      </>
                     )}
                   </div>
                 );
               })}
             </div>
+
+            {lootBag.length === 0 && (
+              <p className="mt-2.5 text-[11px] text-[#D9D2C5] text-center">
+                Chưa có vật phẩm. Hãy nhấn giữ Trống Đồng để quay lộc đầu mùa!
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -920,8 +959,19 @@ export default function KarmaWheelSection({
             initial={{ opacity: 0, y: 24, scale: 0.92 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.95 }}
+            role="dialog"
+            aria-label={`Phần thưởng đạt được: ${wonPrize.fullName}`}
             className="mt-10 carved-wood-box rounded-3xl p-6 sm:p-8 relative overflow-hidden"
           >
+            <button
+              type="button"
+              onClick={() => setWonPrize(null)}
+              aria-label="Đóng thông báo phần thưởng"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#1C110B] border border-[#F2D39B]/40 flex items-center justify-center text-[#F7F3E8] hover:border-[#F2D39B] cursor-pointer z-20"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
             <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
               <div className="w-28 h-28 rounded-2xl bg-[#0D0704] border-2 border-[#FFD700] flex items-center justify-center p-3 shrink-0 shadow-[0_0_40px_rgba(255,215,0,0.4)]">
                 <img
@@ -933,7 +983,7 @@ export default function KarmaWheelSection({
 
               <div className="flex-1 text-center md:text-left">
                 <span className="inline-block text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md bg-[#FFD700] text-[#1C110B] mb-2">
-                  {wonPrize.tier} ❖ +{wonPrize.moneyBonus.toLocaleString("vi-VN")}đ
+                  {wonPrize.tier} • +{wonPrize.moneyBonus.toLocaleString("vi-VN")} Xu Làng
                 </span>
                 <h3 className="font-wood text-2xl sm:text-3xl text-[#FFE89E]">
                   {wonPrize.fullName}
@@ -949,6 +999,8 @@ export default function KarmaWheelSection({
                     {giftCode}
                   </code>
                   <button
+                    type="button"
+                    aria-label="Sao chép mã kỷ niệm"
                     onClick={() => {
                       navigator.clipboard.writeText(giftCode);
                       setCopied(true);
@@ -961,6 +1013,7 @@ export default function KarmaWheelSection({
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => launchSpin(1)}
                   className="px-6 py-3 rounded-xl bg-gradient-to-b from-[#FFE082] to-[#C99A35] border-2 border-white text-[#1C110B] font-black text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-[0_4px_0_#5C2804]"
                 >
